@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sage ERP Database Viewer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #f8fafc;
+        color: #334155;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 40px 20px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        color: #64748b;
+      }
+
+      .actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+
+      .btn:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn.primary {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+
+      .btn.primary:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+      }
+
+      .btn.success {
+        background: #10b981;
+        color: white;
+        border-color: #10b981;
+      }
+
+      .btn.success:hover {
+        background: #059669;
+        border-color: #059669;
+      }
+
+      .table-section {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        overflow: hidden;
+      }
+
+      .table-header {
+        padding: 20px 30px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .table-header h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .table-container {
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #475569;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      tr:hover {
+        background: #f8fafc;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #64748b;
+      }
+
+      .empty-state h3 {
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .alert {
+        padding: 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        display: none;
+      }
+
+      .alert.success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+      }
+
+      .alert.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📊 Database Viewer</h1>
+        <p>View and export your Sage ERP data</p>
+      </div>
+
+      <div class="actions">
+        <a href="/" class="btn">🏠 Dashboard</a>
+        <a href="/health" class="btn">💚 Health Status</a>
+        <button onclick="refreshData()" class="btn primary">
+          🔄 Refresh Data
+        </button>
+        <button onclick="exportToExcel('invoices')" class="btn success">
+          📥 Export Invoices
+        </button>
+        <button onclick="exportToExcel('lines')" class="btn success">
+          📥 Export Line Items
+        </button>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading database data...</p>
+      </div>
+
+      <div class="alert" id="alert"></div>
+
+      <!-- Invoice Headers Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <h2>🧾 Invoice Headers (dbo.InvNum)</h2>
+          <span id="invoiceCount" class="detail-value">0 records</span>
+        </div>
+        <div class="table-container">
+          <table id="invoicesTable">
+            <thead>
+              <tr>
+                <th>AutoIndex</th>
+                <th>Order Number</th>
+                <th>Account ID</th>
+                <th>Invoice Date</th>
+                <th>Total (Incl)</th>
+                <th>Total (Excl)</th>
+                <th>Tax Amount</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody id="invoicesBody">
+              <!-- Data will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Invoice Lines Table -->
+      <div class="table-section">
+        <div class="table-header">
+          <h2>📦 Invoice Line Items (dbo.btblInvoiceLines)</h2>
+          <span id="linesCount" class="detail-value">0 records</span>
+        </div>
+        <div class="table-container">
+          <table id="linesTable">
+            <thead>
+              <tr>
+                <th>Line ID</th>
+                <th>Invoice ID</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Line Total</th>
+                <th>Stock Code ID</th>
+                <th>Tax Rate</th>
+              </tr>
+            </thead>
+            <tbody id="linesBody">
+              <!-- Data will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let databaseData = null;
+
+      async function loadDatabaseData() {
+        try {
+          document.getElementById("loading").style.display = "block";
+
+          const response = await fetch("/api/database-data");
+          databaseData = await response.json();
+
+          document.getElementById("loading").style.display = "none";
+
+          if (databaseData.success) {
+            updateInvoicesTable();
+            updateLinesTable();
+            showAlert("success", "Database data loaded successfully");
+          } else {
+            showAlert(
+              "error",
+              databaseData.error || "Failed to load database data"
+            );
+            showEmptyTables();
+          }
+        } catch (error) {
+          document.getElementById("loading").style.display = "none";
+          showAlert("error", "Error loading database data: " + error.message);
+          showEmptyTables();
+        }
+      }
+
+      function updateInvoicesTable() {
+        const tbody = document.getElementById("invoicesBody");
+        const count = document.getElementById("invoiceCount");
+        const invoices = databaseData.invoices || [];
+
+        count.textContent = `${invoices.length} records`;
+
+        if (invoices.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <h3>No invoices found</h3>
+                            <p>Process some orders to see data here</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = invoices
+          .map(
+            (invoice) => `
+                <tr>
+                    <td>${invoice.AutoIndex}</td>
+                    <td>${invoice.OrderNum}</td>
+                    <td>${invoice.AccountID}</td>
+                    <td>${new Date(invoice.InvDate).toLocaleDateString()}</td>
+                    <td>${invoice.InvTotIncl?.toFixed(2) || "0.00"}</td>
+                    <td>${invoice.InvTotExcl?.toFixed(2) || "0.00"}</td>
+                    <td>${invoice.InvTotTax?.toFixed(2) || "0.00"}</td>
+                    <td>${
+                      [invoice.Address1, invoice.Address2, invoice.Address3]
+                        .filter((a) => a)
+                        .join(", ") || "N/A"
+                    }</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      function updateLinesTable() {
+        const tbody = document.getElementById("linesBody");
+        const count = document.getElementById("linesCount");
+        const lines = databaseData.lines || [];
+
+        count.textContent = `${lines.length} records`;
+
+        if (lines.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <h3>No line items found</h3>
+                            <p>Process some orders to see data here</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = lines
+          .map(
+            (line) => `
+                <tr>
+                    <td>${line.LineID}</td>
+                    <td>${line.iInvoiceID}</td>
+                    <td>${line.cDescription}</td>
+                    <td>${line.fQuantity?.toFixed(2) || "0.00"}</td>
+                    <td>${
+                      line.fUnitPriceInclzDefault?.toFixed(2) || "0.00"
+                    }</td>
+                    <td>${line.fQuantityLineTotIncl?.toFixed(2) || "0.00"}</td>
+                    <td>${line.iStockCodeID || "N/A"}</td>
+                    <td>${line.fTaxRate?.toFixed(1) || "0.0"}%</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      function showEmptyTables() {
+        document.getElementById("invoiceCount").textContent = "0 records";
+        document.getElementById("linesCount").textContent = "0 records";
+
+        document.getElementById("invoicesBody").innerHTML = `
+                <tr><td colspan="8" class="empty-state"><h3>Database connection failed</h3><p>Check your configuration</p></td></tr>
+            `;
+
+        document.getElementById("linesBody").innerHTML = `
+                <tr><td colspan="8" class="empty-state"><h3>Database connection failed</h3><p>Check your configuration</p></td></tr>
+            `;
+      }
+
+      async function exportToExcel(type) {
+        try {
+          showAlert("success", "Preparing Excel export...");
+
+          const response = await fetch(`/api/export-excel/${type}`);
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `sage_${type}_${
+              new Date().toISOString().split("T")[0]
+            }.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showAlert("success", "Excel file downloaded successfully!");
+          } else {
+            const error = await response.json();
+            showAlert("error", error.error || "Export failed");
+          }
+        } catch (error) {
+          showAlert("error", "Export failed: " + error.message);
+        }
+      }
+
+      function showAlert(type, message) {
+        const alert = document.getElementById("alert");
+        alert.className = `alert ${type}`;
+        alert.textContent = message;
+        alert.style.display = "block";
+
+        setTimeout(() => {
+          alert.style.display = "none";
+        }, 5000);
+      }
+
+      async function refreshData() {
+        await loadDatabaseData();
+      }
+
+      // Load data on page load
+      window.addEventListener("load", loadDatabaseData);
+
+      // Auto-refresh every 60 seconds
+      setInterval(loadDatabaseData, 60000);
+    </script>
+  </body>
+</html>
