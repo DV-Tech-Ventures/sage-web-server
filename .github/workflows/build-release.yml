@@ -50,36 +50,37 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Release Name
-        id: release_name
-        run: |
-          VERSION="${{ github.event.inputs.version || github.ref_name }}"
-          TYPE="${{ github.event.inputs.release_type || 'Release' }}"
-          CUSTOM_NAME="${{ github.event.inputs.release_name }}"
+       - name: Generate Release Name
+         id: release_name
+         shell: pwsh
+         run: |
+           $VERSION = "${{ github.event.inputs.version || github.ref_name }}"
+           $TYPE = "${{ github.event.inputs.release_type || 'Release' }}"
+           $CUSTOM_NAME = "${{ github.event.inputs.release_name }}"
 
-          if [ -n "$CUSTOM_NAME" ]; then
-            RELEASE_NAME="$CUSTOM_NAME"
-          else
-            case "$TYPE" in
-              "Major Release")
-                RELEASE_NAME="🚀 Sage ERP Webhook Server $VERSION - Major Release"
-                ;;
-              "Feature Update")
-                RELEASE_NAME="✨ Sage ERP Webhook Server $VERSION - New Features"
-                ;;
-              "Bug Fix")
-                RELEASE_NAME="🐛 Sage ERP Webhook Server $VERSION - Bug Fixes"
-                ;;
-              "Security Update")
-                RELEASE_NAME="🔒 Sage ERP Webhook Server $VERSION - Security Update"
-                ;;
-              *)
-                RELEASE_NAME="📦 Sage ERP Webhook Server $VERSION"
-                ;;
-            esac
-          fi
+           if ($CUSTOM_NAME) {
+             $RELEASE_NAME = $CUSTOM_NAME
+           } else {
+             switch ($TYPE) {
+               "Major Release" {
+                 $RELEASE_NAME = "🚀 Sage ERP Webhook Server $VERSION - Major Release"
+               }
+               "Feature Update" {
+                 $RELEASE_NAME = "✨ Sage ERP Webhook Server $VERSION - New Features"
+               }
+               "Bug Fix" {
+                 $RELEASE_NAME = "🐛 Sage ERP Webhook Server $VERSION - Bug Fixes"
+               }
+               "Security Update" {
+                 $RELEASE_NAME = "🔒 Sage ERP Webhook Server $VERSION - Security Update"
+               }
+               default {
+                 $RELEASE_NAME = "📦 Sage ERP Webhook Server $VERSION"
+               }
+             }
+           }
 
-          echo "name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+           echo "name=$RELEASE_NAME" >> $env:GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
