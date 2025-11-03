@@ -1,0 +1,70 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build TypeScript
+      run: npm run build
+      
+    - name: Build Electron App
+      run: npm run build-electron
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          dist-installer/*.exe
+        name: "Sage ERP Webhook Server ${{ github.ref_name }}"
+        body: |
+          # 🔗 Sage ERP Webhook Server ${{ github.ref_name }}
+          
+          **Professional webhook server for Sage ERP integration with OdaFlow**
+          
+          ## 🪟 Windows Downloads (No Node.js Required)
+          
+          | Download | Description |
+          |----------|-------------|
+          | **SageWebhookServer-Setup.exe** | Professional Windows installer with wizard |
+          | **SageWebhookServer-Portable.exe** | Portable executable (no installation needed) |
+          
+          **✨ Features:**
+          - ✅ **Node.js bundled inside** - No separate installation
+          - ✅ **Web-based configuration** - 5 simple fields
+          - ✅ **Database viewer** - See your Sage data
+          - ✅ **Professional monitoring** - Health dashboard
+          - ✅ **Excel export** - Download reports
+          
+          ## 🚀 Quick Start
+          1. Download SageWebhookServer-Setup.exe
+          2. Double-click to install
+          3. Configure via web interface
+          4. Done! ✅
+          
+          **Perfect for manufacturers - no technical knowledge required!**
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
