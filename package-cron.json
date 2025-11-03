@@ -1,0 +1,13 @@
+{
+  "name": "webhook-longevity-tester",
+  "version": "1.0.0",
+  "description": "Automated webhook testing service for longevity testing",
+  "main": "test-cron-service.js",
+  "scripts": {
+    "start": "node test-cron-service.js",
+    "test": "node test-single.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

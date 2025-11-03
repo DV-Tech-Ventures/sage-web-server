@@ -266,12 +266,20 @@ Order numbers trigger different responses:
 
 ## 🛠️ Commands
 
+### **End Users (Windows Installer):**
+```bash
+# No commands needed! Just double-click the installer
+SageWebhookServer-Setup.exe
+```
+
+### **Developers:**
 ```bash
 npm install              # Install dependencies
 npm start               # Start server with web interface
 npm run test-connection # Test database connection
 npm run build          # Build for production
-npm run prod           # Run production build
+npm run electron        # Run as Electron app
+npm run build-electron  # Build Windows installer
 ```
 
 ---
@@ -476,8 +484,24 @@ MIT License - Free for commercial use
 
 ---
 
+---
+
+## 📥 Downloads
+
+### **For Manufacturers (Non-Technical):**
+- 🪟 **Windows Installer:** [Download SageWebhookServer-Setup.exe](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)
+- 📋 **Quick Start Guide:** [Installation Instructions](https://github.com/DV-Tech-Ventures/sage-web-server#installation-options)
+
+### **For Developers:**
+- 💻 **Source Code:** [GitHub Repository](https://github.com/DV-Tech-Ventures/sage-web-server)
+- 📖 **Documentation:** This README
+- 🔧 **Build Tools:** Electron Builder configuration included
+
+---
+
 **Status:** ✅ Production Ready  
 **Version:** 2.0.0  
+**Platform:** Windows (Installer) + Cross-platform (Source)  
 **Last Updated:** November 2025  
 
-🚀 **Ready for enterprise deployment!**
+🚀 **Ready for enterprise deployment with one-click Windows installer!**
