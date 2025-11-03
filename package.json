@@ -12,6 +12,7 @@
     "electron": "electron electron-main.js",
     "electron-dev": "NODE_ENV=development electron electron-main.js",
     "build-electron": "npm run build && electron-builder",
+    "build-portable": "node build-portable.js",
     "dist": "npm run build && electron-builder --publish=never",
     "release": "npm run build && electron-builder --publish=always"
   },

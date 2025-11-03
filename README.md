@@ -19,9 +19,29 @@ A production-ready webhook server that receives order data from OdaFlow and auto
 
 ---
 
-## ⚡ Quick Start (2 Minutes)
+## ⚡ Installation Options
 
-### Step 1: Install & Start
+### 🪟 **Option 1: Windows Installer (For Manufacturers)**
+
+**Perfect for non-technical users - no Node.js required!**
+
+1. **📥 Download:** [SageWebhookServer-Setup.exe](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)
+2. **🖱️ Install:** Double-click and follow the wizard
+3. **🌐 Configure:** Web interface opens automatically
+4. **⚙️ Setup:** Fill 5 simple fields (server, database, username, password, port)
+5. **✅ Done:** Webhook server running as Windows app!
+
+**Features:**
+
+- ✅ **Node.js bundled inside** - No separate installation
+- ✅ **Professional installer** - Standard Windows experience
+- ✅ **Desktop shortcut** - Easy access
+- ✅ **Auto-start option** - Runs with Windows
+- ✅ **System tray** - Runs in background
+
+### 💻 **Option 2: Developer Setup**
+
+**For developers and technical users:**
 
 ```bash
 git clone git@github.com:DV-Tech-Ventures/sage-web-server.git
@@ -30,11 +50,23 @@ npm install
 npm start
 ```
 
-### Step 2: Configure Database
+### 🚀 **Option 3: Portable Executable**
 
-**Automatically opens:** `http://localhost:3000`
+**Single file, no installation:**
+
+1. **📥 Download:** `SageWebhookServer-Portable.exe`
+2. **🖱️ Run:** Just double-click the .exe file
+3. **🌐 Configure:** Web interface opens automatically
+4. **✅ Done:** No installation wizard needed!
+
+---
+
+## ⚙️ Configuration (All Options)
+
+**Web interface opens automatically at:** `http://localhost:3000`
 
 **Fill in 5 simple fields:**
+
 - **Server:** `localhost` (your Sage SQL Server)
 - **Database:** `YourSageDatabase` (your Sage database name)
 - **Username:** `sa` (SQL Server username)
@@ -44,32 +76,26 @@ npm start
 **Click:** "Test Connection" → ✅ Success!  
 **Click:** "Save Configuration" → ✅ Saved!
 
-### Step 3: Expose Webhook
+### Integration with OdaFlow
 
-```bash
-# In another terminal
-ngrok http 3000
-```
-
-**Copy the HTTPS URL** (e.g., `https://abc123.ngrok.io`)
-
-### Step 4: Configure in OdaFlow
-
-Use the ngrok HTTPS URL in your OdaFlow webhook configuration.
-
-**Done!** 🎉 Orders will now automatically sync to your Sage ERP.
+1. **Expose webhook:** `ngrok http 3000` (get HTTPS URL)
+2. **Configure in OdaFlow:** Use ngrok URL in webhook settings
+3. **Test:** Approve orders to see them sync to Sage
+4. **Done!** 🎉 Automatic order synchronization
 
 ---
 
 ## 🌐 Web Interface
 
 ### 🏠 **Dashboard** (`http://localhost:3000`)
+
 - **Connection status** - Real-time database connection monitoring
 - **System overview** - Server status, uptime, and health
 - **Quick actions** - Test webhook, view database, reconfigure
 - **Next steps guidance** - Clear instructions for integration
 
 ### 📊 **Database Viewer** (`http://localhost:3000/database`)
+
 - **Invoice headers table** - View all processed orders (dbo.InvNum)
 - **Line items table** - View order details (dbo.btblInvoiceLines)
 - **Excel export** - Download data as CSV/Excel files
@@ -77,12 +103,14 @@ Use the ngrok HTTPS URL in your OdaFlow webhook configuration.
 - **Search and filter** - Find specific orders quickly
 
 ### 💚 **Health Status** (`http://localhost:3000/health`)
+
 - **Status cards** - Visual health indicators
 - **Database statistics** - Invoice counts, connection status
 - **Server metrics** - Uptime, performance data
 - **Connection details** - Database server information
 
 ### ⚙️ **Configuration** (`http://localhost:3000/setup`)
+
 - **Simple form** - 5 fields only, pre-filled with existing settings
 - **Real-time testing** - Test connection before saving
 - **Secure password handling** - Passwords hidden for security
@@ -111,6 +139,7 @@ Order appears in Sage ERP
 ### 2. **Data Transformation**
 
 **OdaFlow sends:**
+
 ```json
 {
   "deliveryId": "uuid-123",
@@ -131,6 +160,7 @@ Order appears in Sage ERP
 ```
 
 **Server processes:**
+
 - ✅ Validates required fields
 - ✅ Checks for duplicates
 - ✅ Inserts header → `dbo.InvNum`
@@ -138,6 +168,7 @@ Order appears in Sage ERP
 - ✅ Returns Sage invoice ID
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -161,6 +192,7 @@ Order appears in Sage ERP
 ### Option 2: Manual Configuration
 
 Create `config.json`:
+
 ```json
 {
   "database": {
@@ -178,6 +210,7 @@ Create `config.json`:
 ### Option 3: Environment Variables
 
 Create `.env`:
+
 ```bash
 SAGE_DB_SERVER=localhost
 SAGE_DB_NAME=YourSageDatabase
@@ -197,6 +230,7 @@ npm run test-connection
 ```
 
 **Expected output:**
+
 ```
 ✅ Connection successful!
 📊 Database Statistics:
@@ -208,11 +242,13 @@ npm run test-connection
 ### Webhook Test
 
 **Via web interface:**
+
 1. Open `http://localhost:3000`
 2. Click "Test Webhook"
 3. Should show ✅ Success with invoice ID
 
 **Via command line:**
+
 ```bash
 curl -X POST http://localhost:3000/receive-order \
   -H "Content-Type: application/json" \
@@ -222,6 +258,7 @@ curl -X POST http://localhost:3000/receive-order \
 ### Test Scenarios
 
 Order numbers trigger different responses:
+
 - `PO-2024-001` → 200 Success (normal)
 - `PO-2024-DUPLICATE-001` → 409 Conflict (stops OdaFlow retries)
 - `PO-2024-BADREQ-001` → 400 Bad Request (OdaFlow retries)
@@ -233,6 +270,7 @@ Order numbers trigger different responses:
 ### Invoice Headers (dbo.InvNum) - 49 Fields
 
 **Core fields:**
+
 - `AutoIndex` - Primary key (auto-increment)
 - `DocType` - Must be 4 (sales order)
 - `DocState` - Must be 1 (active)
@@ -242,15 +280,18 @@ Order numbers trigger different responses:
 - `InvTotIncl/Excl/Tax` - Total amounts
 
 **Address fields:**
+
 - `Address1-4` - Split address components
 
 **System fields:**
+
 - `DelMethodID`, `DocRepID`, `ProjectID` - Sage system IDs
 - `bUseFixedPrices`, `iDocPrinted` - System flags
 
 ### Invoice Lines (dbo.btblInvoiceLines) - 40 Fields
 
 **Core fields:**
+
 - `iInvoiceID` - Foreign key to InvNum
 - `cDescription` - Product description
 - `fQuantity` - Order quantity
@@ -258,6 +299,7 @@ Order numbers trigger different responses:
 - `fUnitPriceInclzDefault` - Unit price with tax
 
 **Calculation fields:**
+
 - `fQuantityLineTotIncl/Excl` - Line totals
 - `fQtyToProcessLineTotIncl/Excl` - Processing totals
 - `fQuantityLineTaxAmount` - Tax amounts
@@ -266,13 +308,19 @@ Order numbers trigger different responses:
 
 ## 🛠️ Commands
 
-### **End Users (Windows Installer):**
+### **For Manufacturers (Windows):**
+
 ```bash
-# No commands needed! Just double-click the installer
-SageWebhookServer-Setup.exe
+# Download and double-click:
+SageWebhookServer-Setup.exe        # Professional installer
+# OR
+SageWebhookServer-Portable.exe     # Portable version (no install)
+
+# No other commands needed! Web interface handles everything.
 ```
 
-### **Developers:**
+### **For Developers:**
+
 ```bash
 npm install              # Install dependencies
 npm start               # Start server with web interface
@@ -280,6 +328,7 @@ npm run test-connection # Test database connection
 npm run build          # Build for production
 npm run electron        # Run as Electron app
 npm run build-electron  # Build Windows installer
+npm run build-portable  # Build portable executable
 ```
 
 ---
@@ -287,12 +336,14 @@ npm run build-electron  # Build Windows installer
 ## 🔒 Security & Production
 
 ### Database Security
+
 - ✅ **Local connection** - Database stays private
 - ✅ **Existing credentials** - Uses your SQL Server authentication
 - ✅ **No external exposure** - Database never exposed to internet
 - ✅ **Configuration encryption** - Passwords stored securely
 
 ### Webhook Security
+
 - ✅ **HTTPS only** - Via ngrok or proper SSL certificate
 - ✅ **Payload validation** - Comprehensive data validation
 - ✅ **Duplicate detection** - Prevents duplicate orders
@@ -301,12 +352,14 @@ npm run build-electron  # Build Windows installer
 ### Production Deployment
 
 **Windows Service:**
+
 ```bash
 npm run build
 # Install as Windows service using node-windows or PM2
 ```
 
 **PM2 Process Manager:**
+
 ```bash
 npm install -g pm2
 pm2 start dist/unifiedServer.js --name sage-webhook
@@ -319,12 +372,14 @@ pm2 save
 ## 📈 Monitoring
 
 ### Real-time Dashboard
+
 - **Connection status** - Green/red indicators
 - **Database statistics** - Invoice counts, last processed
 - **Server metrics** - Uptime, performance
 - **Webhook status** - Endpoint availability
 
 ### Database Viewer
+
 - **Live data tables** - See processed orders immediately
 - **Export functionality** - Download CSV/Excel reports
 - **Search capabilities** - Find specific orders
@@ -337,18 +392,21 @@ pm2 save
 ### Common Issues
 
 **"Database connection failed"**
+
 1. Verify SQL Server is running
 2. Check database name (case-sensitive)
 3. Test credentials with SQL Server Management Studio
 4. Ensure TCP/IP is enabled in SQL Server Configuration
 
 **"Webhook not receiving data"**
+
 1. Check ngrok is running: `ngrok http 3000`
 2. Verify webhook URL in OdaFlow configuration
 3. Check server logs for incoming requests
 4. Test manually with curl
 
 **"Orders not appearing in Sage"**
+
 1. Visit health page to check database status
 2. Verify user has INSERT permissions on Sage tables
 3. Check database viewer for processed orders
@@ -366,6 +424,7 @@ pm2 save
 ## 🏗️ Architecture
 
 ### Project Structure
+
 ```
 sage-web-server/
 ├── src/
@@ -393,6 +452,7 @@ sage-web-server/
 ```
 
 ### Technology Stack
+
 - **Backend:** Node.js + TypeScript + Express
 - **Database:** Microsoft SQL Server (mssql package)
 - **Frontend:** Vanilla HTML/CSS/JavaScript
@@ -403,6 +463,7 @@ sage-web-server/
 ## 🚀 Integration with OdaFlow
 
 ### Setup Process
+
 1. **Deploy webhook server** on manufacturer's machine
 2. **Configure Sage database** via web interface
 3. **Expose webhook** with ngrok or public domain
@@ -410,6 +471,7 @@ sage-web-server/
 5. **Test integration** by approving orders
 
 ### Data Flow
+
 ```
 OdaFlow → Webhook Server → Sage Database
    ↓           ↓              ↓
@@ -419,6 +481,7 @@ Approved → Validate → dbo.InvNum + dbo.btblInvoiceLines
 ```
 
 ### Monitoring
+
 - **Real-time status** via web dashboard
 - **Database viewer** to see processed orders
 - **Health monitoring** for system status
@@ -429,18 +492,21 @@ Approved → Validate → dbo.InvNum + dbo.btblInvoiceLines
 ## 📞 Support
 
 ### Quick Commands
+
 ```bash
 npm start               # Start server (opens web interface)
 npm run test-connection # Test database connection
 ```
 
 ### Web Interface
+
 - **Main dashboard:** `http://localhost:3000`
 - **Database viewer:** `http://localhost:3000/database`
 - **Health status:** `http://localhost:3000/health`
 - **Configuration:** `http://localhost:3000/setup`
 
 ### Getting Help
+
 1. **Check dashboard** - Real-time status and error messages
 2. **View database** - See if orders are being processed
 3. **Check health page** - Detailed system information
@@ -488,20 +554,32 @@ MIT License - Free for commercial use
 
 ## 📥 Downloads
 
-### **For Manufacturers (Non-Technical):**
-- 🪟 **Windows Installer:** [Download SageWebhookServer-Setup.exe](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)
-- 📋 **Quick Start Guide:** [Installation Instructions](https://github.com/DV-Tech-Ventures/sage-web-server#installation-options)
+### **🪟 For Manufacturers (Windows - No Node.js Required):**
 
-### **For Developers:**
-- 💻 **Source Code:** [GitHub Repository](https://github.com/DV-Tech-Ventures/sage-web-server)
-- 📖 **Documentation:** This README
-- 🔧 **Build Tools:** Electron Builder configuration included
+| Download                                                                                                  | Size  | Description                        | Best For                          |
+| --------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- | --------------------------------- |
+| [**SageWebhookServer-Setup.exe**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)    | ~50MB | Professional installer with wizard | Companies, permanent installation |
+| [**SageWebhookServer-Portable.exe**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest) | ~50MB | Single file, no installation       | Testing, portable usage           |
+
+**✨ Both options include:**
+
+- ✅ **Node.js runtime bundled** - No separate installation needed
+- ✅ **All dependencies included** - Complete package
+- ✅ **Web interface** - Beautiful configuration and monitoring
+- ✅ **Database viewer** - See your Sage data with Excel export
+- ✅ **Professional UI** - Native Windows experience
+
+### **💻 For Developers:**
+
+- **Source Code:** [GitHub Repository](https://github.com/DV-Tech-Ventures/sage-web-server)
+- **Documentation:** This README + inline help
+- **Build Tools:** Electron Builder + pkg bundler included
 
 ---
 
 **Status:** ✅ Production Ready  
 **Version:** 2.0.0  
 **Platform:** Windows (Installer) + Cross-platform (Source)  
-**Last Updated:** November 2025  
+**Last Updated:** November 2025
 
 🚀 **Ready for enterprise deployment with one-click Windows installer!**

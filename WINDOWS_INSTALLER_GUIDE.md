@@ -9,6 +9,7 @@ This creates a professional Windows installer (.exe) that manufacturers can down
 ## 🎯 What the Installer Does
 
 ### **One-Click Installation:**
+
 1. **Downloads** → User downloads `SageWebhookServer-Setup.exe`
 2. **Installs** → Double-click installer, click Next, Next, Install
 3. **Runs** → Automatically opens web interface
@@ -16,6 +17,7 @@ This creates a professional Windows installer (.exe) that manufacturers can down
 5. **Ready** → Webhook server running as Windows service
 
 ### **User Experience:**
+
 - 📥 **Download** single .exe file
 - 🖱️ **Double-click** to install
 - 🌐 **Web interface opens** automatically
@@ -27,6 +29,7 @@ This creates a professional Windows installer (.exe) that manufacturers can down
 ## 🛠️ Building the Installer
 
 ### **Prerequisites:**
+
 - Node.js installed
 - Windows machine (for building Windows installer)
 - Or use GitHub Actions for cross-platform building
@@ -51,12 +54,14 @@ npm run build-electron
 ## 📦 What Gets Packaged
 
 ### **Application Files:**
+
 - ✅ **Webhook server** (compiled Node.js)
 - ✅ **Web interface** (HTML/CSS/JS)
 - ✅ **Database drivers** (mssql package)
 - ✅ **Configuration tools** (setup interface)
 
 ### **Windows Integration:**
+
 - ✅ **Desktop shortcut** - Easy access
 - ✅ **Start menu entry** - Professional appearance
 - ✅ **Auto-start option** - Run on Windows startup
@@ -64,6 +69,7 @@ npm run build-electron
 - ✅ **Uninstaller** - Clean removal
 
 ### **User Interface:**
+
 - ✅ **Native Windows app** - Looks like Windows software
 - ✅ **Web interface** - Familiar browser-like experience
 - ✅ **Professional design** - Clean, modern UI
@@ -74,6 +80,7 @@ npm run build-electron
 ## 🎨 Installer Features
 
 ### **Installation Wizard:**
+
 ```
 Welcome Screen
     ↓
@@ -94,6 +101,7 @@ Finish:
 ```
 
 ### **Post-Installation:**
+
 - 🚀 **Auto-launches** application
 - 🌐 **Opens web interface** in embedded browser
 - 📋 **Shows quick start** guide
@@ -106,6 +114,7 @@ Finish:
 ### **For Non-Technical Users:**
 
 **Step 1: Download & Install**
+
 ```
 1. Download SageWebhookServer-Setup.exe
 2. Double-click to install
@@ -114,6 +123,7 @@ Finish:
 ```
 
 **Step 2: Configure (Web Interface)**
+
 ```
 1. Beautiful form opens automatically
 2. Fill in 5 fields:
@@ -127,6 +137,7 @@ Finish:
 ```
 
 **Step 3: Integration**
+
 ```
 1. Install ngrok or configure firewall
 2. Get public URL for webhook
@@ -139,18 +150,21 @@ Finish:
 ## 🔧 Technical Details
 
 ### **Electron Wrapper:**
+
 - **Main Process** - Manages webhook server lifecycle
 - **Renderer Process** - Displays web interface
 - **IPC Communication** - Bridge between processes
 - **Auto-updater** - Automatic updates from GitHub
 
 ### **Windows Service:**
+
 - **Background operation** - Runs even when window closed
 - **System tray icon** - Shows status and quick actions
 - **Auto-start option** - Starts with Windows
 - **Graceful shutdown** - Proper cleanup on exit
 
 ### **Packaging:**
+
 - **NSIS Installer** - Professional Windows installer
 - **Code signing** - Trusted publisher (optional)
 - **Auto-updater** - Updates from GitHub releases
@@ -161,6 +175,7 @@ Finish:
 ## 🚀 Distribution
 
 ### **GitHub Releases:**
+
 ```bash
 # Create release
 npm run release
@@ -170,6 +185,7 @@ npm run release
 ```
 
 ### **Download Links:**
+
 - **Latest Release:** Auto-generated download link
 - **Direct Download:** `SageWebhookServer-Setup.exe`
 - **Automatic Updates** - Users get notified of new versions
@@ -181,12 +197,13 @@ npm run release
 ### **Simple Download & Install:**
 
 **Email to manufacturers:**
+
 ```
 Subject: Sage ERP Integration - One-Click Installation
 
 Hi [Manufacturer],
 
-Your Sage ERP integration with OdaFlow is ready! 
+Your Sage ERP integration with OdaFlow is ready!
 
 📥 Download: [GitHub Release Link]
 🖱️ Install: Double-click the .exe file and follow the wizard
@@ -207,6 +224,7 @@ OdaFlow Team
 ## ✅ Benefits for Manufacturers
 
 ### **Before (Technical):**
+
 ```
 ❌ Install Node.js
 ❌ Install Git
@@ -218,6 +236,7 @@ OdaFlow Team
 ```
 
 ### **After (Simple):**
+
 ```
 ✅ Download one .exe file
 ✅ Double-click to install
@@ -230,6 +249,7 @@ OdaFlow Team
 ## 🎯 Perfect Solution
 
 **For manufacturers:**
+
 - 📥 **One download** - Single .exe file
 - 🖱️ **One-click install** - Standard Windows installer
 - 🌐 **Web interface** - Familiar browser experience
@@ -238,6 +258,7 @@ OdaFlow Team
 - 🔄 **Automatic updates** - Always latest version
 
 **For you:**
+
 - 🚀 **Easy distribution** - Send one download link
 - 📞 **Less support** - Self-explanatory installer
 - ✅ **Higher adoption** - No technical barriers
