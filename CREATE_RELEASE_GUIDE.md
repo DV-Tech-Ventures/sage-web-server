@@ -41,12 +41,13 @@ npm run build-electron
 
 ### 📥 For Manufacturers (Recommended)
 
-| Download | Size | Description |
-|----------|------|-------------|
-| **SageWebhookServer-Setup.exe** | ~50MB | Professional Windows installer |
+| Download                           | Size  | Description                      |
+| ---------------------------------- | ----- | -------------------------------- |
+| **SageWebhookServer-Setup.exe**    | ~50MB | Professional Windows installer   |
 | **SageWebhookServer-Portable.exe** | ~50MB | Portable executable (no install) |
 
 **✨ Both include:**
+
 - ✅ **Node.js runtime bundled** - No separate installation needed
 - ✅ **Complete Sage ERP integration** - 49 header + 40 line fields
 - ✅ **Beautiful web interface** - Professional configuration and monitoring
@@ -56,6 +57,7 @@ npm run build-electron
 ## 🚀 Quick Start
 
 ### Option 1: Professional Installer
+
 1. Download `SageWebhookServer-Setup.exe`
 2. Double-click to install
 3. Follow installation wizard
@@ -64,7 +66,8 @@ npm run build-electron
 6. Done! ✅
 
 ### Option 2: Portable Version
-1. Download `SageWebhookServer-Portable.exe`  
+
+1. Download `SageWebhookServer-Portable.exe`
 2. Double-click to run (no installation)
 3. Configure your Sage database
 4. Done! ✅
@@ -118,36 +121,36 @@ name: Build Windows Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Build TypeScript
-      run: npm run build
-      
-    - name: Build Electron App
-      run: npm run build-electron
-      
-    - name: Upload Release Assets
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          dist-installer/*.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Build Electron App
+        run: npm run build-electron
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist-installer/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 This will automatically build and upload the .exe files when you create a new tag!
