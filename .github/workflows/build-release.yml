@@ -1,4 +1,4 @@
-name: Build and Tag
+name: Build Windows Installer
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
         default: 'Feature Update'
 
 jobs:
-  build-and-tag:
+  build-installer:
     runs-on: windows-latest
     
     steps:
@@ -70,15 +70,6 @@ jobs:
         
         echo "name=$RELEASE_NAME" >> $env:GITHUB_OUTPUT
     
-    - name: Create Git Tag
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git tag -a ${{ github.event.inputs.version }} -m "${{ steps.release_name.outputs.name }}"
-        git push origin ${{ github.event.inputs.version }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -94,8 +85,10 @@ jobs:
         echo "📥 Installer files available in artifacts"
         echo ""
         echo "🎯 Next steps:"
-        echo "1. Go to GitHub Releases page"
-        echo "2. Click 'Create a new release'"
-        echo "3. Select tag: ${{ github.event.inputs.version }}"
-        echo "4. Download artifacts and attach to release"
-        echo "5. Publish release"
+        echo "1. Download the artifacts from this workflow run"
+        echo "2. Create git tag manually: git tag ${{ github.event.inputs.version }} && git push origin ${{ github.event.inputs.version }}"
+        echo "3. Go to GitHub Releases page"
+        echo "4. Click 'Create a new release'"
+        echo "5. Select tag: ${{ github.event.inputs.version }}"
+        echo "6. Upload the .exe files from artifacts"
+        echo "7. Publish release"
