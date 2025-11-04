@@ -556,18 +556,19 @@ MIT License - Free for commercial use
 
 ### **🪟 For Manufacturers (Windows - No Node.js Required):**
 
-| Download                                                                                                  | Size  | Description                        | Best For                          |
-| --------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- | --------------------------------- |
-| [**SageWebhookServer-Setup.exe**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)    | ~50MB | Professional installer with wizard | Companies, permanent installation |
-| [**SageWebhookServer-Portable.exe**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest) | ~50MB | Single file, no installation       | Testing, portable usage           |
+| Download                                                                                                  | Size  | Description                        | Setup Required                          |
+| --------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- | --------------------------------------- |
+| [**Source Code (zip)**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)    | ~100KB | Complete source code | Install Node.js, run `npm install && npm start` |
 
-**✨ Both options include:**
+**⚠️ Windows installer (.exe) coming soon!**
 
-- ✅ **Node.js runtime bundled** - No separate installation needed
-- ✅ **All dependencies included** - Complete package
+**✨ Current version includes:**
+
 - ✅ **Web interface** - Beautiful configuration and monitoring
 - ✅ **Database viewer** - See your Sage data with Excel export
-- ✅ **Professional UI** - Native Windows experience
+- ✅ **Professional UI** - Modern web interface
+- ✅ **Complete Sage integration** - 49+40 field support
+- ⚠️ **Requires Node.js** - Install Node.js first, then run `npm start`
 
 ### **💻 For Developers:**
 
