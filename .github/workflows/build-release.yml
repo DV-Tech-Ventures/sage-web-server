@@ -38,10 +38,11 @@ jobs:
     - name: Build TypeScript
       run: npm run build
       
-    - name: Build Windows Installer
-      run: npm run build-electron
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Windows Service Dependencies
+      run: npm install node-windows
+    
+    - name: Build Windows Service Package
+      run: npm run build-windows-package
     
     - name: Generate Release Name
       id: release_name
@@ -99,15 +100,20 @@ jobs:
     - name: Build Summary
       run: |
         echo "✅ Build completed successfully!"
-        echo "📦 Windows installer built for ${{ github.event.inputs.version }}"
-        echo "🏷️ Git tag created: ${{ github.event.inputs.version }}"
-        echo "📥 Installer files available in artifacts"
+        echo "📦 Windows Service Package built for ${{ github.event.inputs.version }}"
+        echo "📁 Package: SageWebhookServer-${{ github.event.inputs.version }}-Windows.zip"
+        echo "📥 Package available in artifacts"
         echo ""
         echo "🎯 Next steps:"
-        echo "1. Download the artifacts from this workflow run"
-        echo "2. Create git tag manually: git tag ${{ github.event.inputs.version }} && git push origin ${{ github.event.inputs.version }}"
+        echo "1. Download the ZIP package from workflow artifacts"
+        echo "2. Create git tag: git tag ${{ github.event.inputs.version }} && git push origin ${{ github.event.inputs.version }}"
         echo "3. Go to GitHub Releases page"
-        echo "4. Click 'Create a new release'"
-        echo "5. Select tag: ${{ github.event.inputs.version }}"
-        echo "6. Upload the .exe files from artifacts"
-        echo "7. Publish release"
+        echo "4. Create release from tag: ${{ github.event.inputs.version }}"
+        echo "5. Upload the ZIP file to the release"
+        echo "6. Publish release"
+        echo ""
+        echo "✅ Manufacturers can then:"
+        echo "   - Download ZIP file"
+        echo "   - Extract and run install-service.bat"
+        echo "   - Configure via web interface"
+        echo "   - No Node.js installation needed!"
