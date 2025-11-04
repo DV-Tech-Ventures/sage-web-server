@@ -31,5 +31,31 @@
     "electron": "^27.0.0",
     "electron-builder": "^24.6.4",
     "electron-reload": "^1.5.0"
+  },
+  "build": {
+    "appId": "com.dvtech.sage-webhook-server",
+    "productName": "Sage ERP Webhook Server",
+    "directories": {
+      "output": "dist-installer"
+    },
+    "files": [
+      "dist/**/*",
+      "src/views/**/*",
+      "src/setup/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "electron-main.js",
+      "electron-preload.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "publisherName": "DV Tech Ventures"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

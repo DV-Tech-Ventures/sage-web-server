@@ -1,0 +1,107 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v2.1.0)'
+        required: true
+        default: 'v2.1.0'
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - 'Feature Update'
+          - 'Major Release'
+          - 'Bug Fix'
+          - 'Security Update'
+        default: 'Feature Update'
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build TypeScript
+      run: npm run build
+      
+    - name: Build Windows Installer
+      run: npm run build-electron
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Generate Release Name
+      id: release_name
+      shell: pwsh
+      run: |
+        $VERSION = "${{ github.event.inputs.version }}"
+        $TYPE = "${{ github.event.inputs.release_type }}"
+        
+        switch ($TYPE) {
+          "Major Release" {
+            $RELEASE_NAME = "🚀 Sage ERP Webhook Server $VERSION - Major Release"
+          }
+          "Feature Update" {
+            $RELEASE_NAME = "✨ Sage ERP Webhook Server $VERSION - New Features"
+          }
+          "Bug Fix" {
+            $RELEASE_NAME = "🐛 Sage ERP Webhook Server $VERSION - Bug Fixes"
+          }
+          "Security Update" {
+            $RELEASE_NAME = "🔒 Sage ERP Webhook Server $VERSION - Security Update"
+          }
+          default {
+            $RELEASE_NAME = "📦 Sage ERP Webhook Server $VERSION"
+          }
+        }
+        
+        echo "name=$RELEASE_NAME" >> $env:GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: ${{ steps.release_name.outputs.name }}
+        files: dist-installer/*.exe
+        body: |
+          # 🔗 ${{ steps.release_name.outputs.name }}
+          
+          **Professional webhook server for Sage ERP integration with OdaFlow**
+          
+          ## 🪟 Windows Downloads (No Node.js Required)
+          
+          | Download | Description |
+          |----------|-------------|
+          | **SageWebhookServer-Setup.exe** | Professional Windows installer (~50MB) |
+          
+          **✨ Features:**
+          - ✅ **Node.js bundled inside** - No separate installation needed
+          - ✅ **Web-based configuration** - 5 simple fields
+          - ✅ **Database viewer** - See your Sage data with Excel export
+          - ✅ **Professional monitoring** - Health dashboard
+          - ✅ **Real-time sync** - Orders automatically sync to Sage
+          
+          ## 🚀 Quick Start
+          1. Download SageWebhookServer-Setup.exe
+          2. Double-click to install
+          3. Configure your Sage database (5 simple fields)
+          4. Done! ✅
+          
+          **Perfect for manufacturers - no technical knowledge required!**
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
