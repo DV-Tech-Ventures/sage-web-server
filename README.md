@@ -556,9 +556,9 @@ MIT License - Free for commercial use
 
 ### **🪟 For Manufacturers (Windows - No Node.js Required):**
 
-| Download                                                                                                  | Size  | Description                        | Setup Required                          |
-| --------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------- | --------------------------------------- |
-| [**Source Code (zip)**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest)    | ~100KB | Complete source code | Install Node.js, run `npm install && npm start` |
+| Download                                                                                     | Size   | Description          | Setup Required                                  |
+| -------------------------------------------------------------------------------------------- | ------ | -------------------- | ----------------------------------------------- |
+| [**Source Code (zip)**](https://github.com/DV-Tech-Ventures/sage-web-server/releases/latest) | ~100KB | Complete source code | Install Node.js, run `npm install && npm start` |
 
 **⚠️ Windows installer (.exe) coming soon!**
 

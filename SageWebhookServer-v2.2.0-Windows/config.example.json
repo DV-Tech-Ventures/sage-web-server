@@ -1,0 +1,18 @@
+{
+  "database": {
+    "server": "localhost",
+    "database": "Debenhamdemo",
+    "port": 1433,
+    "username": "sa",
+    "password": "year2006.",
+    "connectionTimeout": 15000,
+    "requestTimeout": 15000,
+    "encrypt": false,
+    "trustServerCertificate": true
+  },
+  "webhook": {
+    "port": 3000,
+    "enableTestScenarios": true,
+    "logLevel": "info"
+  }
+}

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sage ERP Webhook - Health Status</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #10b981;
+        }
+
+        .status-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .status-card.error {
+            border-left-color: #ef4444;
+        }
+
+        .status-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .status-value.success {
+            color: #10b981;
+        }
+
+        .status-value.warning {
+            color: #f59e0b;
+        }
+
+        .status-value.error {
+            color: #ef4444;
+        }
+
+        .status-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .details-section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .details-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .detail-value {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            color: #1e293b;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn.primary {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .btn.primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .btn.success {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .btn.success:hover {
+            background: #059669;
+            border-color: #059669;
+        }
+
+        .auto-refresh {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            display: none;
+        }
+
+        .alert.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Sage ERP Webhook Server</h1>
+            <p>System Health & Status Monitor</p>
+        </div>
+
+        <div class="status-grid" id="statusGrid">
+            <!-- Status cards will be populated by JavaScript -->
+        </div>
+
+        <div class="details-section">
+            <h2>📊 Database Connection</h2>
+            <div id="databaseDetails">
+                <!-- Database details will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h2>📡 Webhook Server</h2>
+            <div id="webhookDetails">
+                <!-- Webhook details will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn primary">🏠 Dashboard</a>
+            <a href="/database" class="btn">📊 View Database</a>
+            <a href="/setup" class="btn">⚙️ Configuration</a>
+            <button onclick="refreshData()" class="btn success">🔄 Refresh</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading health data...</p>
+        </div>
+
+        <div class="alert" id="alert"></div>
+
+        <div class="auto-refresh">
+            <p>🔄 Auto-refresh every 30 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        let healthData = null;
+
+        async function loadHealthData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                
+                const response = await fetch('/api/health-data');
+                healthData = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (healthData) {
+                    updateStatusCards();
+                    updateDatabaseDetails();
+                    updateWebhookDetails();
+                } else {
+                    showAlert('error', 'Failed to load health data');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showAlert('error', 'Error loading health data: ' + error.message);
+            }
+        }
+
+        function updateStatusCards() {
+            const grid = document.getElementById('statusGrid');
+            const isConnected = healthData.connection?.isConnected;
+            
+            grid.innerHTML = `
+                <div class="status-card ${isConnected ? '' : 'error'}">
+                    <h3>Database Status</h3>
+                    <div class="status-value ${isConnected ? 'success' : 'error'}">
+                        ${isConnected ? '✅ Connected' : '❌ Disconnected'}
+                    </div>
+                    <div class="status-label">Connection Status</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Total Invoices</h3>
+                    <div class="status-value success">
+                        ${healthData.database?.totalInvoices || 0}
+                    </div>
+                    <div class="status-label">Records in dbo.InvNum</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Line Items</h3>
+                    <div class="status-value success">
+                        ${healthData.database?.totalLineItems || 0}
+                    </div>
+                    <div class="status-label">Records in dbo.btblInvoiceLines</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Server Uptime</h3>
+                    <div class="status-value success">
+                        ${formatUptime(healthData.uptime)}
+                    </div>
+                    <div class="status-label">Running Time</div>
+                </div>
+            `;
+        }
+
+        function updateDatabaseDetails() {
+            const details = document.getElementById('databaseDetails');
+            const conn = healthData.connection || {};
+            
+            details.innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">Server</span>
+                    <span class="detail-value">${conn.server || 'Unknown'}:${conn.port || 1433}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Database</span>
+                    <span class="detail-value">${conn.database || 'Unknown'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Connection Status</span>
+                    <span class="detail-value ${conn.isConnected ? 'success' : 'error'}">
+                        ${conn.isConnected ? '✅ Connected' : '❌ Disconnected'}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Last Invoice Date</span>
+                    <span class="detail-value">
+                        ${healthData.database?.lastInvoiceDate ? 
+                          new Date(healthData.database.lastInvoiceDate).toLocaleDateString() : 
+                          'No invoices yet'}
+                    </span>
+                </div>
+            `;
+        }
+
+        function updateWebhookDetails() {
+            const details = document.getElementById('webhookDetails');
+            
+            details.innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value success">✅ ${healthData.status}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Endpoint</span>
+                    <span class="detail-value">POST /receive-order</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Started</span>
+                    <span class="detail-value">${new Date(Date.now() - (healthData.uptime * 1000)).toLocaleString()}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Last Updated</span>
+                    <span class="detail-value">${new Date(healthData.timestamp).toLocaleString()}</span>
+                </div>
+            `;
+        }
+
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${secs}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+
+        function showAlert(type, message) {
+            const alert = document.getElementById('alert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        async function refreshData() {
+            showAlert('success', 'Refreshing health data...');
+            await loadHealthData();
+        }
+
+        // Load data on page load
+        window.addEventListener('load', loadHealthData);
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadHealthData, 30000);
+    </script>
+</body>
+</html>
