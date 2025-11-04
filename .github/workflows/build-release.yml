@@ -1,4 +1,4 @@
-name: Create Release
+name: Build and Tag
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
         default: 'Feature Update'
 
 jobs:
-  create-release:
+  build-and-tag:
     runs-on: windows-latest
     
     steps:
@@ -70,38 +70,32 @@ jobs:
         
         echo "name=$RELEASE_NAME" >> $env:GITHUB_OUTPUT
     
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.event.inputs.version }}
-        name: ${{ steps.release_name.outputs.name }}
-        files: dist-installer/*.exe
-        body: |
-          # 🔗 ${{ steps.release_name.outputs.name }}
-          
-          **Professional webhook server for Sage ERP integration with OdaFlow**
-          
-          ## 🪟 Windows Downloads (No Node.js Required)
-          
-          | Download | Description |
-          |----------|-------------|
-          | **SageWebhookServer-Setup.exe** | Professional Windows installer (~50MB) |
-          
-          **✨ Features:**
-          - ✅ **Node.js bundled inside** - No separate installation needed
-          - ✅ **Web-based configuration** - 5 simple fields
-          - ✅ **Database viewer** - See your Sage data with Excel export
-          - ✅ **Professional monitoring** - Health dashboard
-          - ✅ **Real-time sync** - Orders automatically sync to Sage
-          
-          ## 🚀 Quick Start
-          1. Download SageWebhookServer-Setup.exe
-          2. Double-click to install
-          3. Configure your Sage database (5 simple fields)
-          4. Done! ✅
-          
-          **Perfect for manufacturers - no technical knowledge required!**
-        draft: false
-        prerelease: false
+    - name: Create Git Tag
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ github.event.inputs.version }} -m "${{ steps.release_name.outputs.name }}"
+        git push origin ${{ github.event.inputs.version }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-installer-${{ github.event.inputs.version }}
+        path: dist-installer/*.exe
+        retention-days: 30
+    
+    - name: Build Summary
+      run: |
+        echo "✅ Build completed successfully!"
+        echo "📦 Windows installer built for ${{ github.event.inputs.version }}"
+        echo "🏷️ Git tag created: ${{ github.event.inputs.version }}"
+        echo "📥 Installer files available in artifacts"
+        echo ""
+        echo "🎯 Next steps:"
+        echo "1. Go to GitHub Releases page"
+        echo "2. Click 'Create a new release'"
+        echo "3. Select tag: ${{ github.event.inputs.version }}"
+        echo "4. Download artifacts and attach to release"
+        echo "5. Publish release"
