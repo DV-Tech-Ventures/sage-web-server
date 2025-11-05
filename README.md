@@ -107,7 +107,9 @@ CREATE TABLE dbo.btblInvoiceLinesX (
 
 **🧪 BETA Testing Mode:** All field names have "X" suffix to prevent accidental writes to production Sage tables.
 
-**⚠️ Important:** Most Sage ERP installations already have these tables. If you're unsure, contact your Sage administrator.
+**📋 Complete Schema Details:** [View Database Schema & Webhook Payload](DATABASE_SCHEMA_BETA.md)
+
+**⚠️ Important:** BETA tables are created automatically. For production, contact your Sage administrator.
 
 ---
 
