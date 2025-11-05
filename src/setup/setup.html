@@ -314,8 +314,8 @@
                     <button type="submit" class="btn-primary">
                         💾 Save Configuration
                     </button>
-                    <button type="button" class="btn-secondary" onclick="startWebhookServer()">
-                        🚀 Start Webhook Server
+                    <button type="button" class="btn-secondary" onclick="viewHealth()">
+                        💚 View Health Status
                     </button>
                 </div>
             </form>
@@ -330,6 +330,14 @@
             <div class="config-preview" id="configPreview" style="display: none;">
                 <strong>Configuration Preview:</strong>
                 <div id="configContent"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #64748b; font-size: 0.9rem;">
+                    After saving configuration:
+                    <a href="/" style="color: #3b82f6; text-decoration: none;">🏠 Go to Dashboard</a> |
+                    <a href="/database" style="color: #3b82f6; text-decoration: none;">📊 View Database</a>
+                </p>
             </div>
         </div>
     </div>
@@ -448,40 +456,8 @@
             }
         }
 
-        async function startWebhookServer() {
-            const status = document.getElementById('status');
-            
-            try {
-                const response = await fetch('/api/start-webhook', {
-                    method: 'POST'
-                });
-
-                const result = await response.json();
-                
-                status.style.display = 'block';
-                
-                if (result.success) {
-                    status.className = 'status success';
-                    status.innerHTML = `
-                        <strong>🚀 Webhook Server Starting!</strong><br>
-                        ${result.message}<br>
-                        Check the console for server status.
-                    `;
-                } else {
-                    status.className = 'status error';
-                    status.innerHTML = `
-                        <strong>❌ Start Failed</strong><br>
-                        Error: ${result.error}
-                    `;
-                }
-            } catch (error) {
-                status.style.display = 'block';
-                status.className = 'status error';
-                status.innerHTML = `
-                    <strong>❌ Start Failed</strong><br>
-                    Error: ${error.message}
-                `;
-            }
+        function viewHealth() {
+            window.open('/health', '_blank');
         }
 
         function getFormData() {

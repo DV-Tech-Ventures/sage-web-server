@@ -37,14 +37,21 @@ async function buildPackage() {
       'node_modules/',
       'src/views/',
       'src/setup/',
+      'src/unifiedServer.ts',
       'package.json',
+      'tsconfig.json',
       'config.example.json',
       'create-windows-service.js',
       'uninstall-windows-service.js',
       'install-service.bat',
       'uninstall-service.bat',
       'open-web-interface.bat',
-      'README-WINDOWS.txt'
+      'start-webhook-server.bat',
+      'start-background-server.bat',
+      'stop-webhook-server.bat',
+      'SIMPLE-SETUP.bat',
+      'README-WINDOWS.txt',
+      'README-SIMPLE.txt'
     ];
 
     for (const file of filesToCopy) {
@@ -81,19 +88,23 @@ async function buildPackage() {
     console.log(`   Size: ${Math.round(stats.size / 1024 / 1024)}MB`);
     
     console.log('\n📋 Contents:');
-    console.log('   ✅ install-service.bat (run as admin to install)');
+    console.log('   ✅ SIMPLE-SETUP.bat (one-time setup)');
+    console.log('   ✅ start-background-server.bat (background mode)');
+    console.log('   ✅ stop-webhook-server.bat (stop server)');
     console.log('   ✅ open-web-interface.bat (configure database)');
-    console.log('   ✅ uninstall-service.bat (remove service)');
     console.log('   ✅ dist/ (compiled server code)');
     console.log('   ✅ node_modules/ (all dependencies)');
-    console.log('   ✅ README-WINDOWS.txt (instructions)');
+    console.log('   ✅ README-SIMPLE.txt (simple instructions)');
 
-    console.log('\n🎯 For Manufacturers:');
-    console.log('   1. Download and extract the ZIP file');
-    console.log('   2. Right-click install-service.bat → Run as administrator');
-    console.log('   3. Double-click open-web-interface.bat');
-    console.log('   4. Configure Sage database via web form');
-    console.log('   5. Done! Service runs automatically');
+    console.log('\n🎯 For Manufacturers (Background Mode):');
+    console.log('   1. Extract ZIP file');
+    console.log('   2. Double-click SIMPLE-SETUP.bat (one-time)');
+    console.log('   3. Double-click start-background-server.bat');
+    console.log('   4. Configure at http://localhost:3000');
+    console.log('   5. Server runs in background - check localhost:3000');
+
+    console.log('\n🎯 To stop server:');
+    console.log('   - Double-click stop-webhook-server.bat');
 
     console.log('\n✅ Ready for distribution to manufacturers!');
 

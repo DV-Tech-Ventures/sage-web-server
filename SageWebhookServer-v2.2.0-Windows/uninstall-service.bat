@@ -21,8 +21,12 @@ if %errorLevel% == 0 (
 echo 🗑️ Uninstalling Sage ERP Webhook Server...
 echo.
 
+REM Change to the script directory
+cd /d "%~dp0"
+echo 📁 Working directory: %CD%
+
 REM Uninstall the service
-node uninstall-windows-service.js
+node "%~dp0uninstall-windows-service.js"
 
 if %errorLevel% == 0 (
     echo.

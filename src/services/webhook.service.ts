@@ -36,7 +36,9 @@ export class WebhookService {
       this.logOrderDetails(payload);
 
       // Check for duplicate order
-      const orderExists = await this.sageDb.orderExists(payload.metadata.orderNumber);
+      const orderExists = await this.sageDb.orderExists(
+        payload.metadata.orderNumber
+      );
       if (orderExists) {
         console.log("⚠️  Order already exists in Sage (409 Conflict)");
         return {
@@ -47,7 +49,9 @@ export class WebhookService {
       }
 
       // Test scenarios based on order number (for testing)
-      const testResponse = this.handleTestScenarios(payload.metadata.orderNumber);
+      const testResponse = this.handleTestScenarios(
+        payload.metadata.orderNumber
+      );
       if (testResponse) {
         return testResponse;
       }
@@ -56,23 +60,35 @@ export class WebhookService {
       let sageInvoiceId: number;
 
       if (this.sageDb.isConnected()) {
-        // Real database mode
-        console.log("💾 Saving to real Sage database...");
-        sageInvoiceId = await this.sageDb.insertInvoiceHeader(payload.invoiceHeader);
-        await this.sageDb.insertInvoiceLines(payload.invoiceLines, sageInvoiceId);
+        // Real database mode - ensure BETA tables exist
+        console.log("💾 Preparing BETA database tables...");
+        await this.sageDb.createBetaTables();
+
+        console.log("💾 Saving to BETA Sage database (X suffix fields)...");
+        sageInvoiceId = await this.sageDb.insertInvoiceHeader(
+          payload.invoiceHeader
+        );
+        await this.sageDb.insertInvoiceLines(
+          payload.invoiceLines,
+          sageInvoiceId
+        );
       } else {
         // Mock mode for testing
         console.log("🎭 Mock mode - simulating database save...");
         sageInvoiceId = Math.floor(Math.random() * 10000) + 1000;
-        
+
         console.log("   📄 Would insert invoice header:");
         console.log("      Table: dbo.InvNum");
         console.log(`      OrderNum: ${payload.invoiceHeader.OrderNum}`);
         console.log(`      Total: ${payload.invoiceHeader.InvTotIncl}`);
-        
+
         console.log("   📦 Would insert invoice lines:");
         payload.invoiceLines.forEach((line, index) => {
-          console.log(`      Line ${index + 1}: ${line.cDescription} (Qty: ${line.fQuantity})`);
+          console.log(
+            `      Line ${index + 1}: ${line.cDescription} (Qty: ${
+              line.fQuantity
+            })`
+          );
         });
       }
 
@@ -85,10 +101,9 @@ export class WebhookService {
         message: "Order saved successfully to Sage ERP",
         sageInvoiceId,
       };
-
     } catch (error: any) {
       console.error("❌ Order processing error:", error.message);
-      
+
       return {
         success: false,
         error: error.message || "Unknown error",
@@ -100,7 +115,10 @@ export class WebhookService {
   /**
    * Validate webhook payload
    */
-  private validatePayload(payload: WebhookPayload): { valid: boolean; error?: string } {
+  private validatePayload(payload: WebhookPayload): {
+    valid: boolean;
+    error?: string;
+  } {
     if (!payload.deliveryId) {
       return { valid: false, error: "Missing deliveryId" };
     }
@@ -113,17 +131,28 @@ export class WebhookService {
       return { valid: false, error: "Missing metadata.orderNumber" };
     }
 
-    // Validate required header fields
-    const requiredHeaderFields = ["DocType", "DocState", "AccountID", "OrderNum"];
+    // Validate required header fields (BETA - with X suffix)
+    const requiredHeaderFields = [
+      "DocTypeX",
+      "DocStateX",
+      "AccountIDX",
+      "OrderNumX",
+    ];
     for (const field of requiredHeaderFields) {
       const headerValue = (payload.invoiceHeader as any)[field];
       if (headerValue === undefined || headerValue === null) {
-        return { valid: false, error: `Missing required header field: ${field}` };
+        return {
+          valid: false,
+          error: `Missing required header field: ${field}`,
+        };
       }
     }
 
     // Validate invoice lines
-    if (!Array.isArray(payload.invoiceLines) || payload.invoiceLines.length === 0) {
+    if (
+      !Array.isArray(payload.invoiceLines) ||
+      payload.invoiceLines.length === 0
+    ) {
       return { valid: false, error: "Invoice lines must be a non-empty array" };
     }
 
@@ -146,18 +175,36 @@ export class WebhookService {
     // Log invoice header
     console.log("\n📄 Invoice Header:");
     const header = payload.invoiceHeader;
-    console.log(`   DocType: ${header.DocType} (${header.DocType === 4 ? 'Sales Order ✅' : 'Unknown'})`);
-    console.log(`   DocState: ${header.DocState} (${header.DocState === 1 ? 'Active ✅' : 'Unknown'})`);
+    console.log(
+      `   DocType: ${header.DocType} (${
+        header.DocType === 4 ? "Sales Order ✅" : "Unknown"
+      })`
+    );
+    console.log(
+      `   DocState: ${header.DocState} (${
+        header.DocState === 1 ? "Active ✅" : "Unknown"
+      })`
+    );
     console.log(`   AccountID: ${header.AccountID}`);
     console.log(`   Order Number: ${header.OrderNum}`);
     console.log(`   Invoice Date: ${header.InvDate}`);
-    console.log(`   Tax Inclusive: ${header.TaxInclusive ? 'Yes' : 'No'}`);
-    console.log(`   Total (Excl): ${header.InvTotExcl} ${payload.metadata.currency}`);
-    console.log(`   Tax Amount: ${header.InvTotTax} ${payload.metadata.currency}`);
-    console.log(`   Total (Incl): ${header.InvTotIncl} ${payload.metadata.currency}`);
-    
+    console.log(`   Tax Inclusive: ${header.TaxInclusive ? "Yes" : "No"}`);
+    console.log(
+      `   Total (Excl): ${header.InvTotExcl} ${payload.metadata.currency}`
+    );
+    console.log(
+      `   Tax Amount: ${header.InvTotTax} ${payload.metadata.currency}`
+    );
+    console.log(
+      `   Total (Incl): ${header.InvTotIncl} ${payload.metadata.currency}`
+    );
+
     if (header.Address1) {
-      console.log(`   Address: ${header.Address1}, ${header.Address2 || ''}, ${header.Address3 || ''}`);
+      console.log(
+        `   Address: ${header.Address1}, ${header.Address2 || ""}, ${
+          header.Address3 || ""
+        }`
+      );
     }
 
     // Log invoice lines
@@ -165,9 +212,13 @@ export class WebhookService {
     payload.invoiceLines.forEach((line: any, index: number) => {
       console.log(`   ${index + 1}. ${line.cDescription}`);
       console.log(`      Quantity: ${line.fQuantity}`);
-      console.log(`      Unit Price: ${line.fUnitPriceIncl} ${payload.metadata.currency} (incl tax)`);
+      console.log(
+        `      Unit Price: ${line.fUnitPriceIncl} ${payload.metadata.currency} (incl tax)`
+      );
       console.log(`      Stock Code ID: ${line.iStockCodeID}`);
-      console.log(`      Line Total: ${line.fQuantityLineTotIncl} ${payload.metadata.currency}`);
+      console.log(
+        `      Line Total: ${line.fQuantityLineTotIncl} ${payload.metadata.currency}`
+      );
       console.log(`      Tax Rate: ${line.fTaxRate}%`);
     });
   }
@@ -184,7 +235,7 @@ export class WebhookService {
         httpStatus: 409,
       };
     }
-    
+
     if (orderNumber.includes("BADREQ")) {
       console.log("⚠️  Simulating bad request (400) - will retry");
       return {
@@ -193,7 +244,7 @@ export class WebhookService {
         httpStatus: 400,
       };
     }
-    
+
     if (orderNumber.includes("NOTFOUND")) {
       console.log("⚠️  Simulating not found (404) - will retry");
       return {

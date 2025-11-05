@@ -20,8 +20,23 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 
-// Serve static files (for setup UI)
-app.use("/setup", express.static(path.join(__dirname, "setup")));
+// Serve static files (for setup UI) - handle both dev and pkg bundled paths
+// When compiled, __dirname is the dist folder, so we need to go up to find src
+const baseDir = process.cwd(); // This is the extracted ZIP directory
+const setupPath = path.join(baseDir, "src", "setup");
+const viewsPath = path.join(baseDir, "src", "views");
+
+console.log(`📁 Base directory: ${baseDir}`);
+console.log(`📁 __dirname: ${__dirname}`);
+console.log(`📁 Setup path: ${setupPath}`);
+console.log(`📁 Views path: ${viewsPath}`);
+
+console.log(`📁 Setup path: ${setupPath}`);
+console.log(`📁 Views path: ${viewsPath}`);
+console.log(`📁 Setup exists: ${fs.existsSync(setupPath)}`);
+console.log(`📁 Views exists: ${fs.existsSync(viewsPath)}`);
+
+app.use("/setup", express.static(setupPath));
 
 // Global services
 let sageDbService: SageDatabaseService | null = null;
@@ -312,14 +327,37 @@ app.get("/", async (req, res) => {
  * Setup page
  */
 app.get("/setup", (req, res) => {
-  res.sendFile(path.join(__dirname, "setup", "setup.html"));
+  const setupFile = path.join(setupPath, "setup.html");
+  if (fs.existsSync(setupFile)) {
+    res.sendFile(setupFile);
+  } else {
+    res.status(404).send(`
+      <h1>Setup page not found</h1>
+      <p>Setup file not found at: ${setupFile}</p>
+      <p>Current working directory: ${process.cwd()}</p>
+      <p>__dirname: ${__dirname}</p>
+    `);
+  }
 });
 
 /**
  * Database viewer page
  */
 app.get("/database", (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "database.html"));
+  const databaseFile = path.join(viewsPath, "database.html");
+  if (fs.existsSync(databaseFile)) {
+    res.sendFile(databaseFile);
+  } else {
+    res.status(404).send(`
+      <h1>Database viewer not found</h1>
+      <p>Database file not found at: ${databaseFile}</p>
+      <p>Available files: ${
+        fs.existsSync(viewsPath)
+          ? fs.readdirSync(viewsPath).join(", ")
+          : "Views directory not found"
+      }</p>
+    `);
+  }
 });
 
 /**
@@ -333,7 +371,20 @@ app.get("/health", (req, res) => {
   }
 
   // Return HTML for browser
-  res.sendFile(path.join(__dirname, "views", "health.html"));
+  const healthFile = path.join(viewsPath, "health.html");
+  if (fs.existsSync(healthFile)) {
+    res.sendFile(healthFile);
+  } else {
+    res.status(404).send(`
+      <h1>Health page not found</h1>
+      <p>Health file not found at: ${healthFile}</p>
+      <p>Available files: ${
+        fs.existsSync(viewsPath)
+          ? fs.readdirSync(viewsPath).join(", ")
+          : "Views directory not found"
+      }</p>
+    `);
+  }
 });
 
 /**
@@ -454,12 +505,12 @@ app.get("/api/export-excel/:type", async (req, res) => {
       headers = [
         "LineID",
         "iInvoiceID",
-        "cDescription",
-        "fQuantity",
-        "fUnitPriceInclzDefault",
-        "fQuantityLineTotIncl",
-        "iStockCodeID",
-        "fTaxRate",
+        "cDescriptionX",
+        "fQuantityX",
+        "fUnitPriceInclzDefaultX",
+        "fQuantityLineTotInclX",
+        "iStockCodeIDX",
+        "fTaxRateX",
       ];
     } else {
       return res.status(400).json({

@@ -21,8 +21,41 @@ if %errorLevel% == 0 (
 echo 📦 Installing Sage ERP Webhook Server as Windows service...
 echo.
 
+REM Change to the script directory
+cd /d "%~dp0"
+echo 📁 Working directory: %CD%
+
+REM Check if required files exist
+if not exist "create-windows-service.js" (
+    echo ❌ create-windows-service.js not found!
+    echo 📁 Current directory: %CD%
+    echo 📋 Files in directory:
+    dir /b
+    pause
+    exit /b 1
+)
+
+if not exist "dist" (
+    echo ❌ dist folder not found!
+    echo 📁 Current directory: %CD%
+    echo 📋 Please ensure you extracted the ZIP file completely
+    pause
+    exit /b 1
+)
+
+if not exist "node_modules" (
+    echo ❌ node_modules folder not found!
+    echo 📁 Current directory: %CD%
+    echo 📋 Please ensure you extracted the ZIP file completely
+    pause
+    exit /b 1
+)
+
+echo ✅ All required files found
+echo.
+
 REM Install the service
-node create-windows-service.js
+node "%~dp0create-windows-service.js"
 
 if %errorLevel% == 0 (
     echo.

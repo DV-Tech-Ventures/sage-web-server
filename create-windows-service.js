@@ -6,11 +6,20 @@
 const Service = require('node-windows').Service;
 const path = require('path');
 
+// Get the correct script path
+const scriptPath = path.join(__dirname, 'dist', 'unifiedServer.js');
+
+console.log('📁 Service configuration:');
+console.log(`   Script path: ${scriptPath}`);
+console.log(`   Working directory: ${__dirname}`);
+console.log(`   Script exists: ${require('fs').existsSync(scriptPath)}`);
+
 // Create a new service object
 const svc = new Service({
   name: 'Sage ERP Webhook Server',
   description: 'Webhook server for Sage ERP integration with OdaFlow',
-  script: path.join(__dirname, 'dist', 'unifiedServer.js'),
+  script: scriptPath,
+  workingDirectory: __dirname,
   nodeOptions: [
     '--harmony',
     '--max_old_space_size=4096'

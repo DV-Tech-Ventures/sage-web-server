@@ -16,6 +16,7 @@
     "install-service": "node create-windows-service.js",
     "uninstall-service": "node uninstall-windows-service.js",
     "build-windows-package": "node build-windows-package.js",
+    "build-standalone": "node build-standalone-package.js",
     "dist": "npm run build && electron-builder --publish=never",
     "release": "npm run build && electron-builder --publish=always"
   },
