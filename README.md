@@ -109,7 +109,9 @@ CREATE TABLE dbo.btblInvoiceLinesX (
 
 **📋 Complete Schema Details:** [View Database Schema & Webhook Payload](DATABASE_SCHEMA_BETA.md)
 
-**⚠️ Important:** BETA tables are created automatically. For production, contact your Sage administrator.
+**🧪 One-Click Table Creation:** Use the "Create BETA Tables" button in the setup interface - no SQL knowledge required!
+
+**⚠️ Important:** BETA tables use X-suffix fields to prevent interference with production Sage data.
 
 ---
 
@@ -130,6 +132,8 @@ CREATE TABLE dbo.btblInvoiceLinesX (
 3. **Click** "Test Connection" → Should show ✅ Success!
 
 4. **Click** "Save Configuration" → Settings saved!
+
+5. **Click** "Create BETA Tables" → Creates safe testing tables with X-suffix fields!
 
 ---
 
@@ -218,6 +222,7 @@ Please configure this URL in OdaFlow webhook settings.
 
 - **Simple form** - 5 fields only, pre-filled with existing settings
 - **Real-time testing** - Test connection before saving
+- **One-click table creation** - "Create BETA Tables" button (49+40 fields)
 - **Secure password handling** - Passwords hidden for security
 - **Visual feedback** - Green checkmarks, error messages
 

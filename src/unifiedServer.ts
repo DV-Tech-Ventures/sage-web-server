@@ -735,7 +735,109 @@ app.post("/api/start-webhook", (req, res) => {
   }
 });
 
-// Test webhook endpoint
+// Create BETA tables endpoint
+app.post("/api/create-beta-tables", async (req, res) => {
+  try {
+    if (!sageDbService) {
+      return res.json({
+        success: false,
+        error: "Database not configured. Please configure database first.",
+      });
+    }
+
+    if (!sageDbService.isConnected()) {
+      return res.json({
+        success: false,
+        error: "Database not connected. Please test connection first.",
+      });
+    }
+
+    console.log("🧪 Creating BETA tables via API request...");
+    const result = await sageDbService.createBetaTables();
+
+    res.json({
+      success: result.created,
+      message: result.message,
+      details: result.details,
+    });
+  } catch (error: any) {
+    console.error("❌ API error creating BETA tables:", error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Delete BETA tables endpoint
+app.post("/api/delete-beta-tables", async (req, res) => {
+  try {
+    if (!sageDbService) {
+      return res.json({
+        success: false,
+        error: "Database not configured. Please configure database first.",
+      });
+    }
+
+    if (!sageDbService.isConnected()) {
+      return res.json({
+        success: false,
+        error: "Database not connected. Please test connection first.",
+      });
+    }
+
+    console.log("🗑️ Deleting BETA tables via API request...");
+    const result = await sageDbService.deleteBetaTables();
+
+    res.json({
+      success: result.deleted,
+      message: result.message,
+      details: result.details,
+    });
+  } catch (error: any) {
+    console.error("❌ API error deleting BETA tables:", error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Delete BETA tables endpoint
+app.post("/api/delete-beta-tables", async (req, res) => {
+  try {
+    if (!sageDbService) {
+      return res.json({
+        success: false,
+        error: "Database not configured. Please configure database first.",
+      });
+    }
+
+    if (!sageDbService.isConnected()) {
+      return res.json({
+        success: false,
+        error: "Database not connected. Please test connection first.",
+      });
+    }
+
+    console.log("🗑️ Deleting BETA tables via API request...");
+    const result = await sageDbService.deleteBetaTables();
+
+    res.json({
+      success: result.deleted,
+      message: result.message,
+      details: result.details,
+    });
+  } catch (error: any) {
+    console.error("❌ API error deleting BETA tables:", error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Test webhook endpoint (inserts and immediately deletes for clean testing)
 app.post("/test-webhook", async (req, res) => {
   if (!isConfigured || !webhookService) {
     return res.json({
@@ -745,15 +847,20 @@ app.post("/test-webhook", async (req, res) => {
   }
 
   try {
-    // Simple test payload
+    console.log(
+      "🧪 Running webhook test (insert + delete for clean testing)..."
+    );
+
+    // Simple test payload with unique test identifier
+    const testOrderNum = "TEST-DELETE-" + Date.now();
     const testPayload = {
       deliveryId: "ui-test-" + Date.now(),
       timestamp: new Date(),
       invoiceHeader: {
         DocTypeX: 4,
         DocStateX: 1,
-        AccountIDX: 16,
-        OrderNumX: "UI-TEST-" + Date.now(),
+        AccountIDX: 999, // Use test account ID
+        OrderNumX: testOrderNum,
         InvDateX: new Date(),
         InvTotInclX: 100,
         InvTotExclX: 86.21,
@@ -761,7 +868,7 @@ app.post("/test-webhook", async (req, res) => {
       },
       invoiceLines: [
         {
-          cDescriptionX: "UI Test Product",
+          cDescriptionX: "TEST PRODUCT - WILL BE DELETED",
           fQuantityX: 1,
           fQtyToProcessX: 1,
           fUnitPriceExclzDefaultX: 86.21,
@@ -779,7 +886,7 @@ app.post("/test-webhook", async (req, res) => {
       ],
       metadata: {
         orderId: "ui-test-order",
-        orderNumber: "UI-TEST-" + Date.now(),
+        orderNumber: testOrderNum,
         erpSystem: "sage",
         currency: "KES",
         taxRate: 16,
@@ -787,19 +894,64 @@ app.post("/test-webhook", async (req, res) => {
     };
 
     const startTime = Date.now();
+
+    // Process the order (insert to database)
     const result = await webhookService.processOrder(testPayload as any);
     const responseTime = Date.now() - startTime;
 
-    res.json({
-      success: result.success,
-      responseTime,
-      message: result.message,
-      error: result.error,
-    });
+    // If successful, immediately delete the test data to keep database clean
+    if (result.success && result.sageInvoiceId && sageDbService) {
+      try {
+        console.log(
+          `🧹 Cleaning up test data (Invoice ID: ${result.sageInvoiceId})...`
+        );
+
+        // Delete test line items first (due to foreign key)
+        await sageDbService.executeQuery(`
+          DELETE FROM dbo.btblInvoiceLinesX WHERE iInvoiceID = ${result.sageInvoiceId}
+        `);
+
+        // Delete test header
+        await sageDbService.executeQuery(`
+          DELETE FROM dbo.InvNumX WHERE AutoIndex = ${result.sageInvoiceId}
+        `);
+
+        console.log("✅ Test data cleaned up - database remains clean");
+
+        res.json({
+          success: true,
+          responseTime,
+          message: "✅ Webhook test successful! Data inserted and cleaned up.",
+          sageInvoiceId: result.sageInvoiceId,
+          note: "Test data was automatically deleted to keep database clean",
+        });
+      } catch (cleanupError: any) {
+        console.log(
+          `⚠️ Test successful but cleanup failed: ${cleanupError.message}`
+        );
+        res.json({
+          success: true,
+          responseTime,
+          message:
+            "✅ Webhook test successful! (Note: Test data remains in database)",
+          sageInvoiceId: result.sageInvoiceId,
+          warning: "Test data cleanup failed - you may need to delete manually",
+        });
+      }
+    } else {
+      // Test failed, return error
+      res.json({
+        success: result.success,
+        responseTime,
+        message: result.message,
+        error: result.error,
+      });
+    }
   } catch (error: any) {
     res.json({
       success: false,
       error: error.message,
+      responseTime: 0,
     });
   }
 });

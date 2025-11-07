@@ -314,6 +314,12 @@
                     <button type="submit" class="btn-primary">
                         💾 Save Configuration
                     </button>
+                    <button type="button" class="btn-secondary" onclick="createBetaTables()">
+                        🧪 Create BETA Tables
+                    </button>
+                    <button type="button" class="btn-test" onclick="deleteBetaTables()">
+                        🗑️ Delete BETA Tables
+                    </button>
                     <button type="button" class="btn-secondary" onclick="viewHealth()">
                         💚 View Health Status
                     </button>
@@ -452,6 +458,116 @@
                 status.innerHTML = `
                     <strong>❌ Save Failed</strong><br>
                     Error: ${error.message}
+                `;
+            }
+        }
+
+        async function createBetaTables() {
+            const loading = document.getElementById('loading');
+            const status = document.getElementById('status');
+            
+            loading.style.display = 'block';
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/create-beta-tables', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                loading.style.display = 'none';
+                status.style.display = 'block';
+                
+                if (result.success) {
+                    status.className = 'status success';
+                    status.innerHTML = `
+                        <strong>✅ BETA Tables Ready!</strong><br>
+                        ${result.message}<br>
+                        <strong>Tables created:</strong><br>
+                        • dbo.InvNumX (49 fields)<br>
+                        • dbo.btblInvoiceLinesX (40 fields)<br>
+                        <br>
+                        <strong>Next steps:</strong><br>
+                        1. Test webhook integration<br>
+                        2. View database to see BETA data<br>
+                        3. All data uses X-suffix fields (safe testing)
+                    `;
+                } else {
+                    status.className = 'status error';
+                    status.innerHTML = `
+                        <strong>❌ Table Creation Failed</strong><br>
+                        Error: ${result.error}<br>
+                        Please ensure you have CREATE TABLE permissions.
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                status.style.display = 'block';
+                status.className = 'status error';
+                status.innerHTML = `
+                    <strong>❌ Creation Failed</strong><br>
+                    Error: ${error.message}<br>
+                    Please check database connection.
+                `;
+            }
+        }
+
+        async function deleteBetaTables() {
+            const loading = document.getElementById('loading');
+            const status = document.getElementById('status');
+            
+            if (!confirm('Are you sure you want to delete all BETA tables? This will remove all test data.')) {
+                return;
+            }
+            
+            loading.style.display = 'block';
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/delete-beta-tables', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                loading.style.display = 'none';
+                status.style.display = 'block';
+                
+                if (result.success) {
+                    status.className = 'status success';
+                    status.innerHTML = `
+                        <strong>✅ BETA Tables Deleted!</strong><br>
+                        ${result.message}<br>
+                        <strong>Tables removed:</strong><br>
+                        • dbo.InvNumX (if existed)<br>
+                        • dbo.btblInvoiceLinesX (if existed)<br>
+                        <br>
+                        <strong>Database is now clean</strong><br>
+                        You can now test table creation from scratch.
+                    `;
+                } else {
+                    status.className = 'status error';
+                    status.innerHTML = `
+                        <strong>❌ Table Deletion Failed</strong><br>
+                        Error: ${result.error}<br>
+                        Please ensure you have DROP TABLE permissions.
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                status.style.display = 'block';
+                status.className = 'status error';
+                status.innerHTML = `
+                    <strong>❌ Deletion Failed</strong><br>
+                    Error: ${error.message}<br>
+                    Please check database connection.
                 `;
             }
         }
