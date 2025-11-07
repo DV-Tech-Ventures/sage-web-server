@@ -422,11 +422,19 @@ export class SageDatabaseService {
         },
       };
     } catch (error: any) {
-      console.error("❌ Failed to create BETA tables:", error.message);
+      console.error("❌ Failed to create BETA tables:", error);
+      console.error("❌ Error details:", JSON.stringify(error, null, 2));
       return {
         created: false,
-        message: `❌ BETA table creation failed: ${error.message}`,
-        details: { error: error.message },
+        message: `❌ BETA table creation failed: ${
+          error.message || "Unknown error"
+        }`,
+        details: {
+          error: error.message || "Unknown error",
+          fullError: error,
+          sqlState: error.state,
+          sqlNumber: error.number,
+        },
       };
     }
   }
@@ -476,28 +484,59 @@ export class SageDatabaseService {
 
       const existingTables = tablesCheck.recordset.map((row) => row.TABLE_NAME);
 
-      // Drop lines table first (due to foreign key constraint)
-      try {
-        await this.pool
-          .request()
-          .query(`DROP TABLE IF EXISTS dbo.btblInvoiceLinesX`);
-        if (existingTables.includes("btblInvoiceLinesX")) {
+      console.log(
+        `📋 Found tables to delete: ${existingTables.join(", ") || "None"}`
+      );
+
+      // Step 1: Force drop lines table first (handles foreign key automatically)
+      if (existingTables.includes("btblInvoiceLinesX")) {
+        try {
+          console.log("🗑️ Force dropping dbo.btblInvoiceLinesX...");
+          await this.pool.request().query(`
+            IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'btblInvoiceLinesX')
+            DROP TABLE dbo.btblInvoiceLinesX
+          `);
           results.linesTable = true;
-          console.log("✅ Dropped dbo.btblInvoiceLinesX table");
+          console.log("✅ Lines table dropped completely");
+        } catch (error: any) {
+          results.errors.push(`Lines table: ${error.message}`);
+          console.log(`❌ Lines table error: ${error.message}`);
         }
-      } catch (error: any) {
-        results.errors.push(`Lines table: ${error.message}`);
       }
 
-      // Drop header table
-      try {
-        await this.pool.request().query(`DROP TABLE IF EXISTS dbo.InvNumX`);
-        if (existingTables.includes("InvNumX")) {
+      // Step 2: Force drop header table
+      if (existingTables.includes("InvNumX")) {
+        try {
+          console.log("🗑️ Force dropping dbo.InvNumX...");
+          await this.pool.request().query(`
+            IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'InvNumX')
+            DROP TABLE dbo.InvNumX
+          `);
           results.headerTable = true;
-          console.log("✅ Dropped dbo.InvNumX table");
+          console.log("✅ Header table dropped completely");
+        } catch (error: any) {
+          results.errors.push(`Header table: ${error.message}`);
+          console.log(`❌ Header table error: ${error.message}`);
         }
-      } catch (error: any) {
-        results.errors.push(`Header table: ${error.message}`);
+      }
+
+      // Step 3: Verify complete removal
+      const verifyCheck = await this.pool.request().query(`
+        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_NAME IN ('InvNumX', 'btblInvoiceLinesX')
+      `);
+
+      const stillExists = verifyCheck.recordset.map((row) => row.TABLE_NAME);
+      console.log(
+        `🔍 Verification: ${
+          stillExists.length === 0
+            ? "All tables deleted successfully!"
+            : "Tables still exist: " + stillExists.join(", ")
+        }`
+      );
+
+      if (stillExists.length > 0) {
+        results.errors.push(`Tables not deleted: ${stillExists.join(", ")}`);
       }
 
       const deleted = results.headerTable || results.linesTable;
