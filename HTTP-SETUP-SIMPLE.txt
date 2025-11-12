@@ -1,0 +1,52 @@
+=====================================
+ HTTP Webhook Server Setup (Simple)
+=====================================
+
+QUICK SETUP FOR IMMEDIATE USE:
+
+1. CONFIGURE WINDOWS FIREWALL:
+   - Right-click "FIREWALL-SETUP.bat" → Run as administrator
+   - This opens port 3000 for external access
+
+2. START WEBHOOK SERVER:
+   - Double-click "start-background-server.bat"
+   - Server starts on all interfaces (0.0.0.0:3000)
+   - Accessible from public IP: 41.90.121.217
+
+3. WEBHOOK URL FOR ODAFLOW:
+   http://41.90.121.217:3000/receive-order
+
+4. WEB INTERFACE (for configuration):
+   http://41.90.121.217:3000
+
+=====================================
+
+NO NGINX REQUIRED FOR HTTP:
+
+✅ Direct Express.js server handles HTTP
+✅ No reverse proxy needed
+✅ Simple port forwarding (3000)
+✅ Windows Firewall configuration only
+
+=====================================
+
+SECURITY CONSIDERATIONS:
+
+⚠️ HTTP is not encrypted (data visible)
+⚠️ Suitable for testing only
+⚠️ Production should use HTTPS
+
+For HTTPS (later):
+- Use Cloudflare Tunnel (easiest)
+- Or nginx + Let's Encrypt (professional)
+- Or ngrok Pro (quick testing)
+
+=====================================
+
+FIREWALL PORTS TO OPEN:
+
+- Port 3000 (webhook server)
+- Inbound TCP connections
+- Allow from any IP (0.0.0.0/0)
+
+=====================================

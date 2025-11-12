@@ -1,6 +1,7 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import https from "https";
 import { SageDatabaseService } from "./services/sageDatabase.service";
 import { WebhookService } from "./services/webhook.service";
 import { WebhookController } from "./controllers/webhook.controller";
@@ -16,6 +17,7 @@ import {
 
 const app = express();
 const port = process.env.PORT || 3000;
+const host = process.env.HOST || "0.0.0.0"; // Listen on all interfaces for public access
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
@@ -738,10 +740,24 @@ app.post("/api/start-webhook", (req, res) => {
 // Create BETA tables endpoint
 app.post("/api/create-beta-tables", async (req, res) => {
   try {
+    console.log("🔍 Create BETA Tables request received");
+    console.log(`   sageDbService exists: ${!!sageDbService}`);
+    console.log(`   isConfigured: ${isConfigured}`);
+
     if (!sageDbService) {
+      console.log("❌ sageDbService is null - database not configured");
+      const configCheck = checkConfiguration();
+      console.log(`   Config check result:`, configCheck);
+
       return res.json({
         success: false,
-        error: "Database not configured. Please configure database first.",
+        error:
+          "Database not configured. Please save configuration first, then refresh the page.",
+        debug: {
+          sageDbServiceExists: !!sageDbService,
+          isConfigured: isConfigured,
+          configCheck: configCheck,
+        },
       });
     }
 
@@ -968,17 +984,19 @@ async function startServer() {
   console.log("🔗 Sage ERP Webhook Server");
   console.log("🚀".repeat(20));
 
-  // Always start the web server first
-  app.listen(port, () => {
+  // Start HTTP server (simple and direct)
+  app.listen(Number(port), host, () => {
     console.log(`📡 Server running on: http://localhost:${port}`);
-    console.log(`🌐 Open in browser: http://localhost:${port}`);
+    console.log(`🌐 Public access: http://41.90.121.217:${port}`);
     console.log(`🔧 Setup interface: http://localhost:${port}/setup`);
     console.log(`📊 Health check: http://localhost:${port}/health`);
     console.log(`📥 Webhook endpoint: http://localhost:${port}/receive-order`);
 
     console.log("\n✅ Web interface is ready!");
     console.log("💡 Open http://localhost:3000 in your browser");
-    console.log("\n⏰ Server ready for configuration and webhook calls...\n");
+    console.log("\n🎯 For OdaFlow webhook configuration:");
+    console.log(`   Webhook URL: http://41.90.121.217:${port}/receive-order`);
+    console.log("\n⏰ Server ready for webhook calls...\n");
   });
 
   // Try to initialize services in background (don't block server startup)

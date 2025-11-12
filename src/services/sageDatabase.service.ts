@@ -357,9 +357,15 @@ export class SageDatabaseService {
               InvTotInclX decimal(18,2),
               InvTotExclX decimal(18,2), 
               InvTotTaxX decimal(18,2),
+              InvTotExclDExX decimal(18,2),
+              InvTotTaxDExX decimal(18,2),
+              InvTotInclDExX decimal(18,2),
               OrdTotInclX decimal(18,2),
               OrdTotExclX decimal(18,2),
-              OrdTotTaxX decimal(18,2)
+              OrdTotTaxX decimal(18,2),
+              OrdTotExclDExX decimal(18,2),
+              OrdTotTaxDExX decimal(18,2),
+              OrdTotInclDExX decimal(18,2)
             );
           `);
           results.headerTable = true;

@@ -28,8 +28,10 @@ if not exist "dist\unifiedServer.js" (
 echo 🚀 Starting Sage ERP Webhook Server in background...
 echo.
 
-REM Start server in background using PowerShell
-powershell -WindowStyle Hidden -Command "& {Set-Location '%~dp0'; node dist\unifiedServer.js}" &
+REM Start server in background using PowerShell (exposed to public IP)
+set HOST=0.0.0.0
+set PORT=3000
+powershell -WindowStyle Hidden -Command "& {Set-Location '%~dp0'; $env:HOST='0.0.0.0'; $env:PORT='3000'; node dist\unifiedServer.js}" &
 
 REM Wait a moment for server to start
 timeout /t 3 /nobreak >nul

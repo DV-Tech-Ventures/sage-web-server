@@ -50,10 +50,11 @@ A production-ready webhook server that receives order data from OdaFlow and auto
 
 ### **Background Mode (Recommended)**
 
-1. **Double-click** `START-BACKGROUND.bat`
+1. **Double-click** `start-background-server.bat`
 2. **Wait 10 seconds** for server to start
 3. **You'll see:** "✅ Server started successfully!"
 4. **Server runs invisibly** in the background
+5. **Accessible publicly** at `http://[YOUR_IP]:3000/receive-order`
 
 ### **Alternative: Visible Mode**
 
