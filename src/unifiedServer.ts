@@ -737,73 +737,25 @@ app.post("/api/start-webhook", (req, res) => {
   }
 });
 
-// Create BETA tables endpoint
-app.post("/api/create-beta-tables", async (req, res) => {
+// Delete ALL BETA data (PRODUCTION CLEANUP)
+app.post("/api/delete-all-beta-data", async (req, res) => {
   try {
-    console.log("🔍 Create BETA Tables request received");
-    console.log(`   sageDbService exists: ${!!sageDbService}`);
-    console.log(`   isConfigured: ${isConfigured}`);
-
     if (!sageDbService) {
-      console.log("❌ sageDbService is null - database not configured");
-      const configCheck = checkConfiguration();
-      console.log(`   Config check result:`, configCheck);
-
       return res.json({
         success: false,
-        error:
-          "Database not configured. Please save configuration first, then refresh the page.",
-        debug: {
-          sageDbServiceExists: !!sageDbService,
-          isConfigured: isConfigured,
-          configCheck: configCheck,
-        },
+        error: "Database not configured",
       });
     }
 
     if (!sageDbService.isConnected()) {
       return res.json({
         success: false,
-        error: "Database not connected. Please test connection first.",
+        error: "Database not connected",
       });
     }
 
-    console.log("🧪 Creating BETA tables via API request...");
-    const result = await sageDbService.createBetaTables();
-
-    res.json({
-      success: result.created,
-      message: result.message,
-      details: result.details,
-    });
-  } catch (error: any) {
-    console.error("❌ API error creating BETA tables:", error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-// Delete BETA tables endpoint
-app.post("/api/delete-beta-tables", async (req, res) => {
-  try {
-    if (!sageDbService) {
-      return res.json({
-        success: false,
-        error: "Database not configured. Please configure database first.",
-      });
-    }
-
-    if (!sageDbService.isConnected()) {
-      return res.json({
-        success: false,
-        error: "Database not connected. Please test connection first.",
-      });
-    }
-
-    console.log("🗑️ Deleting BETA tables via API request...");
-    const result = await sageDbService.deleteBetaTables();
+    console.log("🚨 Deleting ALL BETA test data...");
+    const result = await sageDbService.deleteAllBetaData();
 
     res.json({
       success: result.deleted,
@@ -811,7 +763,7 @@ app.post("/api/delete-beta-tables", async (req, res) => {
       details: result.details,
     });
   } catch (error: any) {
-    console.error("❌ API error deleting BETA tables:", error.message);
+    console.error("❌ Error deleting BETA data:", error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -837,7 +789,7 @@ app.post("/api/delete-beta-tables", async (req, res) => {
     }
 
     console.log("🗑️ Deleting BETA tables via API request...");
-    const result = await sageDbService.deleteBetaTables();
+    const result = await sageDbService.deleteAllBetaData();
 
     res.json({
       success: result.deleted,
@@ -867,37 +819,37 @@ app.post("/test-webhook", async (req, res) => {
       "🧪 Running webhook test (insert + delete for clean testing)..."
     );
 
-    // Simple test payload with unique test identifier
+    // Test payload matching WEBHOOK_SYSTEM_IMPLEMENTATION.md format exactly
     const testOrderNum = "TEST-DELETE-" + Date.now();
     const testPayload = {
       deliveryId: "ui-test-" + Date.now(),
       timestamp: new Date(),
       invoiceHeader: {
-        DocTypeX: 4,
-        DocStateX: 1,
-        AccountIDX: 999, // Use test account ID
-        OrderNumX: testOrderNum,
-        InvDateX: new Date(),
-        InvTotInclX: 100,
-        InvTotExclX: 86.21,
-        InvTotTaxX: 13.79,
+        DocType: 4,
+        DocState: 1,
+        AccountID: 5255, // From SageBranchMapping example
+        OrderNum: testOrderNum,
+        InvDate: new Date().toISOString().split("T")[0], // "2025-11-27" format
+        TaxInclusive: false, // MUST BE false
+        InvTotExcl: 5000,
+        InvTotTax: 0, // MUST BE 0
+        InvTotIncl: 5000,
+        LineCount: 1,
       },
       invoiceLines: [
         {
-          cDescriptionX: "TEST PRODUCT - WILL BE DELETED",
-          fQuantityX: 1,
-          fQtyToProcessX: 1,
-          fUnitPriceExclzDefaultX: 86.21,
-          fUnitPriceInclzDefaultX: 100,
-          fTaxRateX: 16,
-          iStockCodeIDX: 999,
-          iTaxTypeIDX: 3,
-          iWarehouseIDX: 1,
-          bIsWhseItemX: true,
-          fQuantityLineTotExclX: 86.21,
-          fQuantityLineTotInclX: 100,
-          fQuantityLineTaxAmountX: 13.79,
-          iLineIDX: 1,
+          iLineID: 1,
+          cDescription: "REGINA PASTA PENNE 400GM - TEST",
+          fQuantity: 10,
+          iStockCodeID: 2299, // From ERPProductMapping example
+          fUnitPriceExcl: 500,
+          fUnitPriceIncl: 500,
+          fTaxRate: 0, // MUST BE 0
+          iTaxTypeID: 12, // MUST BE 12
+          iWarehouseID: 1,
+
+          fQuantityLineTotExcl: 5000,
+          fQuantityLineTotIncl: 5000,
         },
       ],
       metadata: {
@@ -905,7 +857,7 @@ app.post("/test-webhook", async (req, res) => {
         orderNumber: testOrderNum,
         erpSystem: "sage",
         currency: "KES",
-        taxRate: 16,
+        taxRate: 0,
       },
     };
 
@@ -924,12 +876,12 @@ app.post("/test-webhook", async (req, res) => {
 
         // Delete test line items first (due to foreign key)
         await sageDbService.executeQuery(`
-          DELETE FROM dbo.btblInvoiceLinesX WHERE iInvoiceID = ${result.sageInvoiceId}
+          DELETE FROM dbo._btblInvoiceLines WHERE iInvoiceID = ${result.sageInvoiceId}
         `);
 
         // Delete test header
         await sageDbService.executeQuery(`
-          DELETE FROM dbo.InvNumX WHERE AutoIndex = ${result.sageInvoiceId}
+          DELETE FROM dbo.InvNum WHERE AutoIndex = ${result.sageInvoiceId}
         `);
 
         console.log("✅ Test data cleaned up - database remains clean");

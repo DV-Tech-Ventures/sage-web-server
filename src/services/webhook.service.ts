@@ -56,15 +56,12 @@ export class WebhookService {
         return testResponse;
       }
 
-      // Process to Sage database
+      // Process to Sage database (PRODUCTION)
       let sageInvoiceId: number;
 
       if (this.sageDb.isConnected()) {
-        // Real database mode - ensure BETA tables exist
-        console.log("💾 Preparing BETA database tables...");
-        await this.sageDb.createBetaTables();
-
-        console.log("💾 Saving to BETA Sage database (X suffix fields)...");
+        // Real database mode - PRODUCTION
+        console.log("💾 Saving to Sage database (PRODUCTION)...");
         sageInvoiceId = await this.sageDb.insertInvoiceHeader(
           payload.invoiceHeader
         );
@@ -131,12 +128,12 @@ export class WebhookService {
       return { valid: false, error: "Missing metadata.orderNumber" };
     }
 
-    // Validate required header fields (BETA - with X suffix)
+    // Validate required header fields (PRODUCTION - no X suffix)
     const requiredHeaderFields = [
-      "DocTypeX",
-      "DocStateX",
-      "AccountIDX",
-      "OrderNumX",
+      "DocType",
+      "DocState",
+      "AccountID",
+      "OrderNum",
     ];
     for (const field of requiredHeaderFields) {
       const headerValue = (payload.invoiceHeader as any)[field];

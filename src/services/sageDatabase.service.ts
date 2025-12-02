@@ -41,9 +41,50 @@ export class SageDatabaseService {
       this.pool = await new sql.ConnectionPool(mssqlConfig).connect();
 
       console.log("✅ Connected to Sage database successfully");
+
+      // Ensure required fields exist in production tables
+      await this.ensureRequiredFields();
     } catch (error: any) {
       console.error("❌ Database connection failed:", error.message);
       throw new Error(`Failed to connect to Sage database: ${error.message}`);
+    }
+  }
+
+  /**
+   * Ensure required fields exist in production Sage tables
+   * Adds iLines field to InvNum if missing
+   */
+  private async ensureRequiredFields(): Promise<void> {
+    try {
+      if (!this.pool) return;
+
+      console.log("🔍 Checking required fields in Sage tables...");
+
+      // Check if iLines column exists in InvNum table
+      const columnCheck = await this.pool.request().query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'InvNum' AND COLUMN_NAME = 'iLines'
+      `);
+
+      if (columnCheck.recordset.length === 0) {
+        console.log("➕ Adding iLines field to InvNum table...");
+
+        await this.pool.request().query(`
+          ALTER TABLE dbo.InvNum 
+          ADD iLines int NULL
+        `);
+
+        console.log("✅ iLines field added to InvNum table");
+      } else {
+        console.log("✅ iLines field already exists in InvNum table");
+      }
+    } catch (error: any) {
+      // Non-critical error - log but don't fail connection
+      console.warn("⚠️  Could not add iLines field:", error.message);
+      console.warn(
+        "   This field is optional and can be added manually if needed"
+      );
     }
   }
 
@@ -67,7 +108,7 @@ export class SageDatabaseService {
   }
 
   /**
-   * Insert invoice header into Sage
+   * Insert invoice header into Sage PRODUCTION table
    */
   async insertInvoiceHeader(invoiceHeader: any): Promise<number> {
     try {
@@ -75,7 +116,7 @@ export class SageDatabaseService {
         throw new Error("Database not connected");
       }
 
-      console.log("💾 Inserting invoice header to dbo.InvNumX (BETA mode)...");
+      console.log("💾 Inserting invoice header to dbo.InvNum (PRODUCTION)...");
 
       const request = this.pool.request();
 
@@ -84,7 +125,23 @@ export class SageDatabaseService {
         const value = invoiceHeader[key];
         if (value !== undefined && value !== null) {
           if (typeof value === "number") {
-            request.input(key, sql.Decimal(18, 2), value);
+            // Use Int for ID fields and counts, Decimal for amounts
+            const intFields = [
+              "DocType",
+              "DocState",
+              "AccountID",
+              "DelMethodID",
+              "DocRepID",
+              "ProjectID",
+              "TillID",
+              "LineCount",
+              "iLines",
+            ];
+            if (intFields.includes(key)) {
+              request.input(key, sql.Int, value);
+            } else {
+              request.input(key, sql.Decimal(18, 2), value);
+            }
           } else if (typeof value === "boolean") {
             request.input(key, sql.Bit, value);
           } else if (value instanceof Date) {
@@ -112,7 +169,7 @@ export class SageDatabaseService {
         .join(", ");
 
       const query = `
-        INSERT INTO dbo.InvNumX (${columns})
+        INSERT INTO dbo.InvNum (${columns})
         OUTPUT INSERTED.AutoIndex
         VALUES (${params})
       `;
@@ -133,7 +190,7 @@ export class SageDatabaseService {
   }
 
   /**
-   * Insert invoice line items into Sage
+   * Insert invoice line items into Sage PRODUCTION table
    */
   async insertInvoiceLines(
     invoiceLines: any[],
@@ -145,7 +202,7 @@ export class SageDatabaseService {
       }
 
       console.log(
-        `💾 Inserting ${invoiceLines.length} line items to dbo.btblInvoiceLinesX (BETA mode)...`
+        `💾 Inserting ${invoiceLines.length} line items to dbo._btblInvoiceLines (PRODUCTION)...`
       );
 
       for (let i = 0; i < invoiceLines.length; i++) {
@@ -157,7 +214,19 @@ export class SageDatabaseService {
           const value = line[key];
           if (value !== undefined && value !== null) {
             if (typeof value === "number") {
-              request.input(key, sql.Decimal(18, 2), value);
+              // Use Int for ID fields, Decimal for amounts/quantities
+              const intFields = [
+                "iStockCodeID",
+                "iTaxTypeID",
+                "iWarehouseID",
+                "iLineID",
+                "iInvoiceID",
+              ];
+              if (intFields.includes(key)) {
+                request.input(key, sql.Int, value);
+              } else {
+                request.input(key, sql.Decimal(18, 2), value);
+              }
             } else if (typeof value === "boolean") {
               request.input(key, sql.Bit, value);
             } else if (value instanceof Date) {
@@ -178,7 +247,7 @@ export class SageDatabaseService {
           .map((k) => `@${k}`)
           .join(", ");
 
-        const query = `INSERT INTO dbo.btblInvoiceLinesX (${columns}) VALUES (${params})`;
+        const query = `INSERT INTO dbo._btblInvoiceLines (${columns}) VALUES (${params})`;
 
         await request.query(query);
         console.log(`   ✅ Line ${i + 1} inserted: ${line.cDescription}`);
@@ -206,7 +275,7 @@ export class SageDatabaseService {
         .request()
         .input("orderNum", sql.NVarChar, orderNumber)
         .query(
-          "SELECT COUNT(*) AS Count FROM dbo.InvNumX WHERE OrderNumX = @orderNum"
+          "SELECT COUNT(*) AS Count FROM dbo.InvNum WHERE OrderNum = @orderNum"
         );
 
       return result.recordset[0].Count > 0;
@@ -217,68 +286,66 @@ export class SageDatabaseService {
   }
 
   /**
-   * Get database statistics
+   * Get database statistics from PRODUCTION tables
    */
   async getStats(): Promise<{
     totalInvoices: number;
     totalLineItems: number;
     lastInvoiceDate?: Date;
-    betaTablesExist: boolean;
+    productionTablesExist: boolean;
   }> {
     try {
       if (!this.pool) {
         throw new Error("Database not connected");
       }
 
-      // First check if BETA tables exist
+      // Check if production tables exist
       const tablesCheck = await this.pool.request().query(`
         SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME IN ('InvNumX', 'btblInvoiceLinesX')
+        WHERE TABLE_NAME IN ('InvNum', '_btblInvoiceLines')
       `);
 
-      const existingTables = tablesCheck.recordset.map((row) => row.TABLE_NAME);
-      const betaTablesExist =
-        existingTables.includes("InvNumX") &&
-        existingTables.includes("btblInvoiceLinesX");
+      const existingTables = tablesCheck.recordset.map(
+        (row: any) => row.TABLE_NAME
+      );
+      const productionTablesExist =
+        existingTables.includes("InvNum") &&
+        existingTables.includes("_btblInvoiceLines");
 
-      if (!betaTablesExist) {
-        console.log(
-          "ℹ️ BETA tables don't exist yet - use 'Create BETA Tables' button"
-        );
+      if (!productionTablesExist) {
+        console.log("ℹ️ Production tables not found");
         return {
           totalInvoices: 0,
           totalLineItems: 0,
-          betaTablesExist: false,
+          productionTablesExist: false,
         };
       }
 
-      // Query BETA tables if they exist
+      // Query production tables
       const invoiceCountResult = await this.pool
         .request()
-        .query("SELECT COUNT(*) AS Count FROM dbo.InvNumX");
+        .query("SELECT COUNT(*) AS Count FROM dbo.InvNum");
 
       const lineCountResult = await this.pool
         .request()
-        .query("SELECT COUNT(*) AS Count FROM dbo.btblInvoiceLinesX");
+        .query("SELECT COUNT(*) AS Count FROM dbo._btblInvoiceLines");
 
       const lastInvoiceResult = await this.pool
         .request()
-        .query(
-          "SELECT TOP 1 InvDateX FROM dbo.InvNumX ORDER BY AutoIndex DESC"
-        );
+        .query("SELECT TOP 1 InvDate FROM dbo.InvNum ORDER BY AutoIndex DESC");
 
       return {
         totalInvoices: invoiceCountResult.recordset[0].Count,
         totalLineItems: lineCountResult.recordset[0].Count,
-        lastInvoiceDate: lastInvoiceResult.recordset[0]?.InvDateX,
-        betaTablesExist: true,
+        lastInvoiceDate: lastInvoiceResult.recordset[0]?.InvDate,
+        productionTablesExist: true,
       };
     } catch (error: any) {
       console.error("❌ Error getting database stats:", error.message);
       return {
         totalInvoices: 0,
         totalLineItems: 0,
-        betaTablesExist: false,
+        productionTablesExist: false,
       };
     }
   }
@@ -306,146 +373,6 @@ export class SageDatabaseService {
   }
 
   /**
-   * Create BETA tables with X suffix for safe testing
-   */
-  async createBetaTables(): Promise<{
-    created: boolean;
-    message: string;
-    details: any;
-  }> {
-    try {
-      if (!this.pool) {
-        throw new Error("Database not connected");
-      }
-
-      console.log("🧪 Creating BETA tables with X suffix...");
-      const results = {
-        headerTable: false,
-        linesTable: false,
-        errors: [] as string[],
-      };
-
-      // Check if tables exist first
-      const tablesCheck = await this.pool.request().query(`
-        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME IN ('InvNumX', 'btblInvoiceLinesX')
-      `);
-
-      const existingTables = tablesCheck.recordset.map((row) => row.TABLE_NAME);
-
-      // Create BETA invoice header table if it doesn't exist
-      if (!existingTables.includes("InvNumX")) {
-        try {
-          await this.pool.request().query(`
-            CREATE TABLE dbo.InvNumX (
-              AutoIndex int IDENTITY(1,1) PRIMARY KEY,
-              DocTypeX int NOT NULL DEFAULT 4,
-              DocStateX int NOT NULL DEFAULT 1,
-              AccountIDX int NOT NULL,
-              DescriptionX nvarchar(255) DEFAULT 'Sales Order',
-              InvDateX datetime NOT NULL,
-              OrderDateX datetime,
-              DueDateX datetime,
-              DeliveryDateX datetime,
-              TaxInclusiveX bit DEFAULT 1,
-              Address1X nvarchar(100),
-              Address2X nvarchar(100),
-              Address3X nvarchar(100),
-              Address4X nvarchar(100),
-              OrderNumX nvarchar(50) NOT NULL UNIQUE,
-              ExtOrderNumX nvarchar(50),
-              InvTotInclX decimal(18,2),
-              InvTotExclX decimal(18,2), 
-              InvTotTaxX decimal(18,2),
-              InvTotExclDExX decimal(18,2),
-              InvTotTaxDExX decimal(18,2),
-              InvTotInclDExX decimal(18,2),
-              OrdTotInclX decimal(18,2),
-              OrdTotExclX decimal(18,2),
-              OrdTotTaxX decimal(18,2),
-              OrdTotExclDExX decimal(18,2),
-              OrdTotTaxDExX decimal(18,2),
-              OrdTotInclDExX decimal(18,2)
-            );
-          `);
-          results.headerTable = true;
-          console.log("✅ Created dbo.InvNumX table");
-        } catch (error: any) {
-          results.errors.push(`Header table: ${error.message}`);
-        }
-      }
-
-      // Create BETA invoice lines table if it doesn't exist
-      if (!existingTables.includes("btblInvoiceLinesX")) {
-        try {
-          await this.pool.request().query(`
-            CREATE TABLE dbo.btblInvoiceLinesX (
-              LineID int IDENTITY(1,1) PRIMARY KEY,
-              iInvoiceID int NOT NULL,
-              cDescriptionX nvarchar(255),
-              fQuantityX decimal(18,2),
-              fQtyToProcessX decimal(18,2),
-              fUnitPriceExclzDefaultX decimal(18,2),
-              fUnitPriceInclzDefaultX decimal(18,2),
-              fTaxRateX decimal(18,2),
-              iStockCodeIDX int,
-              iTaxTypeIDX int DEFAULT 3,
-              iWarehouseIDX int DEFAULT 1,
-              bIsWhseItemX bit DEFAULT 1,
-              fQuantityLineTotExclX decimal(18,2),
-              fQuantityLineTotInclX decimal(18,2),
-              fQuantityLineTaxAmountX decimal(18,2),
-              iLineIDX int,
-              FOREIGN KEY (iInvoiceID) REFERENCES dbo.InvNumX(AutoIndex)
-            );
-          `);
-          results.linesTable = true;
-          console.log("✅ Created dbo.btblInvoiceLinesX table");
-        } catch (error: any) {
-          results.errors.push(`Lines table: ${error.message}`);
-        }
-      }
-
-      const created = results.headerTable || results.linesTable;
-      const message = created
-        ? `✅ BETA tables created successfully! ${
-            results.headerTable ? "Header table created. " : ""
-          }${results.linesTable ? "Lines table created." : ""}`
-        : existingTables.length > 0
-        ? "ℹ️ BETA tables already exist and are ready for testing"
-        : "⚠️ No tables were created";
-
-      console.log("✅ BETA tables ready for testing");
-
-      return {
-        created: created || existingTables.length > 0,
-        message,
-        details: {
-          headerTableCreated: results.headerTable,
-          linesTableCreated: results.linesTable,
-          existingTables,
-          errors: results.errors,
-        },
-      };
-    } catch (error: any) {
-      console.error("❌ Failed to create BETA tables:", error);
-      console.error("❌ Error details:", JSON.stringify(error, null, 2));
-      return {
-        created: false,
-        message: `❌ BETA table creation failed: ${
-          error.message || "Unknown error"
-        }`,
-        details: {
-          error: error.message || "Unknown error",
-          fullError: error,
-          sqlState: error.state,
-          sqlNumber: error.number,
-        },
-      };
-    }
-  }
-
-  /**
    * Execute raw SQL query
    */
   async executeQuery(query: string): Promise<any> {
@@ -463,9 +390,10 @@ export class SageDatabaseService {
   }
 
   /**
-   * Delete BETA tables completely (for testing table creation)
+   * Delete ALL BETA test data and tables (PRODUCTION CLEANUP)
+   * This removes all X-suffix tables and prepares for live deployment
    */
-  async deleteBetaTables(): Promise<{
+  async deleteAllBetaData(): Promise<{
     deleted: boolean;
     message: string;
     details: any;
@@ -475,109 +403,87 @@ export class SageDatabaseService {
         throw new Error("Database not connected");
       }
 
-      console.log("🗑️ Deleting BETA tables with X suffix...");
+      console.log("🚨 PRODUCTION CLEANUP - Deleting ALL BETA data...");
       const results = {
-        headerTable: false,
-        linesTable: false,
+        betaTablesDeleted: [] as string[],
         errors: [] as string[],
       };
 
-      // Check which tables exist
+      // Find all tables with X suffix (BETA tables)
       const tablesCheck = await this.pool.request().query(`
         SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME IN ('InvNumX', 'btblInvoiceLinesX')
+        WHERE TABLE_NAME LIKE '%X' AND TABLE_SCHEMA = 'dbo'
       `);
 
-      const existingTables = tablesCheck.recordset.map((row) => row.TABLE_NAME);
-
-      console.log(
-        `📋 Found tables to delete: ${existingTables.join(", ") || "None"}`
+      const betaTables = tablesCheck.recordset.map(
+        (row: any) => row.TABLE_NAME
       );
 
-      // Step 1: Force drop lines table first (handles foreign key automatically)
-      if (existingTables.includes("btblInvoiceLinesX")) {
+      console.log(
+        `📋 Found BETA tables to delete: ${betaTables.join(", ") || "None"}`
+      );
+
+      if (betaTables.length === 0) {
+        return {
+          deleted: false,
+          message: "ℹ️ No BETA tables found - database is already clean",
+          details: { betaTablesDeleted: [], errors: [] },
+        };
+      }
+
+      // Delete each BETA table
+      for (const tableName of betaTables) {
         try {
-          console.log("🗑️ Force dropping dbo.btblInvoiceLinesX...");
+          console.log(`🗑️ Dropping ${tableName}...`);
           await this.pool.request().query(`
-            IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'btblInvoiceLinesX')
-            DROP TABLE dbo.btblInvoiceLinesX
+            DROP TABLE IF EXISTS dbo.${tableName}
           `);
-          results.linesTable = true;
-          console.log("✅ Lines table dropped completely");
+          results.betaTablesDeleted.push(tableName);
+          console.log(`✅ ${tableName} deleted`);
         } catch (error: any) {
-          results.errors.push(`Lines table: ${error.message}`);
-          console.log(`❌ Lines table error: ${error.message}`);
+          results.errors.push(`${tableName}: ${error.message}`);
+          console.error(`❌ Error deleting ${tableName}:`, error.message);
         }
       }
 
-      // Step 2: Force drop header table
-      if (existingTables.includes("InvNumX")) {
-        try {
-          console.log("🗑️ Force dropping dbo.InvNumX...");
-          await this.pool.request().query(`
-            IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'InvNumX')
-            DROP TABLE dbo.InvNumX
-          `);
-          results.headerTable = true;
-          console.log("✅ Header table dropped completely");
-        } catch (error: any) {
-          results.errors.push(`Header table: ${error.message}`);
-          console.log(`❌ Header table error: ${error.message}`);
-        }
-      }
-
-      // Step 3: Verify complete removal
+      // Verify cleanup
       const verifyCheck = await this.pool.request().query(`
         SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME IN ('InvNumX', 'btblInvoiceLinesX')
+        WHERE TABLE_NAME LIKE '%X' AND TABLE_SCHEMA = 'dbo'
       `);
 
-      const stillExists = verifyCheck.recordset.map((row) => row.TABLE_NAME);
-      console.log(
-        `🔍 Verification: ${
-          stillExists.length === 0
-            ? "All tables deleted successfully!"
-            : "Tables still exist: " + stillExists.join(", ")
-        }`
+      const stillExists = verifyCheck.recordset.map(
+        (row: any) => row.TABLE_NAME
       );
 
-      if (stillExists.length > 0) {
-        results.errors.push(`Tables not deleted: ${stillExists.join(", ")}`);
-      }
+      const message =
+        stillExists.length === 0
+          ? `✅ ALL BETA data removed! Deleted ${results.betaTablesDeleted.length} table(s). Database ready for production.`
+          : `⚠️ Some tables still exist: ${stillExists.join(", ")}`;
 
-      const deleted = results.headerTable || results.linesTable;
-      const message = deleted
-        ? `✅ BETA tables deleted successfully! ${
-            results.linesTable ? "Lines table deleted. " : ""
-          }${results.headerTable ? "Header table deleted." : ""}`
-        : existingTables.length === 0
-        ? "ℹ️ No BETA tables found to delete"
-        : "⚠️ No tables were deleted";
-
-      console.log("✅ BETA table deletion complete");
+      console.log(message);
 
       return {
-        deleted: deleted,
+        deleted: results.betaTablesDeleted.length > 0,
         message,
         details: {
-          headerTableDeleted: results.headerTable,
-          linesTableDeleted: results.linesTable,
-          existingTables,
+          betaTablesDeleted: results.betaTablesDeleted,
+          stillExists,
           errors: results.errors,
         },
       };
     } catch (error: any) {
-      console.error("❌ Failed to delete BETA tables:", error.message);
+      console.error("❌ Failed to delete BETA data:", error.message);
       return {
         deleted: false,
-        message: `❌ BETA table deletion failed: ${error.message}`,
+        message: `❌ BETA cleanup failed: ${error.message}`,
         details: { error: error.message },
       };
     }
   }
 
   /**
-   * Get invoice headers for database viewer
+   * Get invoice headers for database viewer (PRODUCTION)
    */
   async getInvoices(): Promise<any[]> {
     try {
@@ -585,22 +491,22 @@ export class SageDatabaseService {
         throw new Error("Database not connected");
       }
 
-      // Check if BETA table exists first
+      // Check if production table exists
       const tableCheck = await this.pool.request().query(`
-        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'InvNumX'
+        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'InvNum'
       `);
 
       if (tableCheck.recordset.length === 0) {
-        console.log("ℹ️ InvNumX table doesn't exist yet");
+        console.log("ℹ️ InvNum table doesn't exist");
         return [];
       }
 
       const result = await this.pool.request().query(`
           SELECT TOP 100 
-            AutoIndex, OrderNumX, AccountIDX, InvDateX, 
-            InvTotInclX, InvTotExclX, InvTotTaxX,
-            Address1X, Address2X, Address3X, DescriptionX
-          FROM dbo.InvNumX 
+            AutoIndex, OrderNum, AccountID, InvDate, 
+            InvTotIncl, InvTotExcl, InvTotTax, iLines,
+            Address1, Address2, Address3, Description
+          FROM dbo.InvNum 
           ORDER BY AutoIndex DESC
         `);
 
@@ -612,7 +518,7 @@ export class SageDatabaseService {
   }
 
   /**
-   * Get invoice line items for database viewer
+   * Get invoice line items for database viewer (PRODUCTION)
    */
   async getInvoiceLines(): Promise<any[]> {
     try {
@@ -620,23 +526,23 @@ export class SageDatabaseService {
         throw new Error("Database not connected");
       }
 
-      // Check if BETA table exists first
+      // Check if production table exists
       const tableCheck = await this.pool.request().query(`
-        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'btblInvoiceLinesX'
+        SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '_btblInvoiceLines'
       `);
 
       if (tableCheck.recordset.length === 0) {
-        console.log("ℹ️ btblInvoiceLinesX table doesn't exist yet");
+        console.log("ℹ️ _btblInvoiceLines table doesn't exist");
         return [];
       }
 
       const result = await this.pool.request().query(`
           SELECT TOP 100 
-            LineID, iInvoiceID, cDescriptionX, fQuantityX, 
-            fUnitPriceInclzDefaultX, fQuantityLineTotInclX, 
-            iStockCodeIDX, fTaxRateX, iLineIDX
-          FROM dbo.btblInvoiceLinesX 
-          ORDER BY LineID DESC
+            idInvoiceLines, iInvoiceID, cDescription, fQuantity, 
+            fUnitPriceIncl, fQuantityLineTotIncl, 
+            iStockCodeID, fTaxRate, iTaxTypeID, iLineID
+          FROM dbo._btblInvoiceLines 
+          ORDER BY idInvoiceLines DESC
         `);
 
       return result.recordset;
