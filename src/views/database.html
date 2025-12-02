@@ -208,12 +208,6 @@
         <button onclick="refreshData()" class="btn primary">
           🔄 Refresh Data
         </button>
-        <button onclick="exportToExcel('invoices')" class="btn success">
-          📥 Export Invoices
-        </button>
-        <button onclick="exportToExcel('lines')" class="btn success">
-          📥 Export Line Items
-        </button>
       </div>
 
       <div class="loading" id="loading">
@@ -401,35 +395,6 @@
         document.getElementById("linesBody").innerHTML = `
                 <tr><td colspan="8" class="empty-state"><h3>Database connection failed</h3><p>Check your configuration</p></td></tr>
             `;
-      }
-
-      async function exportToExcel(type) {
-        try {
-          showAlert("success", "Preparing Excel export...");
-
-          const response = await fetch(`/api/export-excel/${type}`);
-
-          if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `sage_${type}_${
-              new Date().toISOString().split("T")[0]
-            }.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            showAlert("success", "Excel file downloaded successfully!");
-          } else {
-            const error = await response.json();
-            showAlert("error", error.error || "Export failed");
-          }
-        } catch (error) {
-          showAlert("error", "Export failed: " + error.message);
-        }
       }
 
       function showAlert(type, message) {
