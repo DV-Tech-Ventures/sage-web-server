@@ -759,7 +759,11 @@ app.post("/test-webhook", async (req, res) => {
         InvTotExcl: 5000,
         InvTotTax: 0, // MUST BE 0
         InvTotIncl: 5000,
-        LineCount: 1,
+        OrdTotExcl: 5000,
+        OrdTotTax: 0,
+        OrdTotIncl: 5000,
+        Description: "Sales Order - Test",
+        iLines: 1, // Number of line items - custom field we added
       },
       invoiceLines: [
         {

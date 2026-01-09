@@ -484,6 +484,7 @@ export class SageDatabaseService {
 
   /**
    * Get invoice headers for database viewer (PRODUCTION)
+   * Only shows latest 50 records where iLines > 0 (orders from OdaFlow)
    */
   async getInvoices(): Promise<any[]> {
     try {
@@ -501,12 +502,14 @@ export class SageDatabaseService {
         return [];
       }
 
+      // Only show invoices with iLines > 0 (our OdaFlow orders)
       const result = await this.pool.request().query(`
-          SELECT TOP 100 
+          SELECT TOP 50 
             AutoIndex, OrderNum, AccountID, InvDate, 
             InvTotIncl, InvTotExcl, InvTotTax, iLines,
             Address1, Address2, Address3, Description
           FROM dbo.InvNum 
+          WHERE iLines IS NOT NULL AND iLines > 0
           ORDER BY AutoIndex DESC
         `);
 
@@ -519,6 +522,7 @@ export class SageDatabaseService {
 
   /**
    * Get invoice line items for database viewer (PRODUCTION)
+   * Only shows line items for the latest 50 invoices with iLines > 0 (orders from OdaFlow)
    */
   async getInvoiceLines(): Promise<any[]> {
     try {
@@ -536,13 +540,20 @@ export class SageDatabaseService {
         return [];
       }
 
+      // Get line items only for the latest 50 OdaFlow invoices
       const result = await this.pool.request().query(`
-          SELECT TOP 100 
-            idInvoiceLines, iInvoiceID, cDescription, fQuantity, 
-            fUnitPriceIncl, fQuantityLineTotIncl, 
-            iStockCodeID, fTaxRate, iTaxTypeID, iLineID
-          FROM dbo._btblInvoiceLines 
-          ORDER BY idInvoiceLines DESC
+          SELECT 
+            l.idInvoiceLines, l.iInvoiceID, l.cDescription, l.fQuantity, 
+            l.fUnitPriceIncl, l.fQuantityLineTotIncl, 
+            l.iStockCodeID, l.fTaxRate, l.iTaxTypeID, l.iLineID
+          FROM dbo._btblInvoiceLines l
+          WHERE l.iInvoiceID IN (
+            SELECT TOP 50 AutoIndex 
+            FROM dbo.InvNum 
+            WHERE iLines IS NOT NULL AND iLines > 0
+            ORDER BY AutoIndex DESC
+          )
+          ORDER BY l.iInvoiceID DESC, l.iLineID ASC
         `);
 
       return result.recordset;
