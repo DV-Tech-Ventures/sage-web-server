@@ -9,7 +9,7 @@ const { execSync } = require("child_process");
 
 console.log("📦 Building Windows Service Package...\n");
 
-const packageName = "SageWebhookServer-v2.2.0-Windows";
+const packageName = "SageWebhookServer-v2.3.0-Windows";
 const packageDir = path.join(__dirname, packageName);
 
 async function buildPackage() {
