@@ -220,7 +220,7 @@
       <!-- Invoice Headers Table -->
       <div class="table-section">
         <div class="table-header">
-          <h2>🧾 Invoice Headers (dbo.InvNum - PRODUCTION)</h2>
+          <h2>🧾 Invoice Headers (dbo.InvNumX)</h2>
           <span id="invoiceCount" class="detail-value">0 records</span>
         </div>
         <div class="table-container">
@@ -248,7 +248,7 @@
       <!-- Invoice Lines Table -->
       <div class="table-section">
         <div class="table-header">
-          <h2>📦 Invoice Line Items (dbo._btblInvoiceLines - PRODUCTION)</h2>
+          <h2>📦 Invoice Line Items (dbo._btblInvoiceLinesX)</h2>
           <span id="linesCount" class="detail-value">0 records</span>
         </div>
         <div class="table-container">
@@ -336,8 +336,8 @@
                     <td>${invoice.InvTotTax?.toFixed(2) || "0.00"}</td>
                     <td>${invoice.iLines || 0}</td>
                     <td>${
-                      [invoice.Address1, invoice.Address2, invoice.Address3]
-                        .filter((a) => a)
+                      [invoice.Address1, invoice.Address2, invoice.Address3, invoice.Address4, invoice.Address5, invoice.Address6]
+                        .filter((a) => a && a.trim && a.trim().length > 0)
                         .join(", ") || "N/A"
                     }</td>
                 </tr>

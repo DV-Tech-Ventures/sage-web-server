@@ -730,6 +730,72 @@ app.post("/api/delete-beta-tables", async (req, res) => {
   }
 });
 
+// Delete invoices endpoint (supports query parameters)
+app.delete("/api/invoices", async (req, res) => {
+  try {
+    if (!sageDbService) {
+      return res.json({
+        success: false,
+        error: "Database not configured. Please configure database first.",
+      });
+    }
+
+    if (!sageDbService.isConnected()) {
+      return res.json({
+        success: false,
+        error: "Database not connected. Please test connection first.",
+      });
+    }
+
+    // Get query parameters
+    const deleteAll =
+      req.query.deleteAll === "true" || req.query.deleteAll === "1";
+    const deleteOrphaned =
+      req.query.deleteOrphaned === "true" ||
+      req.query.deleteOrphaned === "1" ||
+      !deleteAll;
+
+    if (deleteAll) {
+      // Delete ALL invoices with iLines > 0 and their line items
+      console.log("🗑️ Deleting ALL invoices with iLines > 0...");
+      const result = await sageDbService.deleteAllInvoicesWithLines();
+
+      res.json({
+        success: result.deleted,
+        message: result.message,
+        deletedInvoices: result.invoiceCount,
+        deletedLines: result.lineCount,
+        invoiceIds: result.invoiceIds,
+      });
+    } else if (deleteOrphaned) {
+      // Delete only orphaned invoices (iLines > 0 but no line items)
+      console.log(
+        "🗑️ Deleting orphaned invoices (iLines > 0 but no line items)..."
+      );
+      const result = await sageDbService.deleteOrphanedInvoices();
+
+      res.json({
+        success: result.deleted,
+        message: result.message,
+        deletedInvoices: result.count,
+        invoiceIds: result.invoiceIds,
+      });
+    } else {
+      res.json({
+        success: false,
+        error:
+          "Invalid query parameters. Use ?deleteAll=true or ?deleteOrphaned=true",
+      });
+    }
+  } catch (error: any) {
+    console.error("❌ API error deleting invoices:", error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Test webhook endpoint (inserts and immediately deletes for clean testing)
 app.post("/test-webhook", async (req, res) => {
   if (!isConfigured || !webhookService) {
@@ -805,12 +871,12 @@ app.post("/test-webhook", async (req, res) => {
 
         // Delete test line items first (due to foreign key)
         await sageDbService.executeQuery(`
-          DELETE FROM dbo._btblInvoiceLines WHERE iInvoiceID = ${result.sageInvoiceId}
+          DELETE FROM dbo._btblInvoiceLinesX WHERE iInvoiceID = ${result.sageInvoiceId}
         `);
 
         // Delete test header
         await sageDbService.executeQuery(`
-          DELETE FROM dbo.InvNum WHERE AutoIndex = ${result.sageInvoiceId}
+          DELETE FROM dbo.InvNumX WHERE AutoIndex = ${result.sageInvoiceId}
         `);
 
         console.log("✅ Test data cleaned up - database remains clean");
